@@ -10,42 +10,53 @@
 #define internal static
 #define local_persist static
 #define global_variable static
+
 // TODO(Sebas):  This is a global for now.
 global_variable bool Running;
 
 global_variable BITMAPINFO BitmapInfo;
 global_variable void* BitmapMemory;
-global_variable HBITMAP BitmapHandle;
+global_variable int BitmapWidth;
+global_variable int BitmapHeight;
 
 internal void
 Win32ResizeDIBSection(int Width, int Height)
 {
+
     // TODO(Sebas):  Bulletproof this.
     // Maybe don't free first, free after, then free first if that fails
-    if(BitmapHandle)
+    if (BitmapMemory)
     {
-        DeleteObject(BitmapHandle);
+        VirtualFree(BitmapMemory, 0, MEM_RELEASE);
     }
+
+    BitmapWidth = Width;
+    BitmapHeight = Height;
+
     BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
-    BitmapInfo.bmiHeader.biWidth = Width;
-    BitmapInfo.bmiHeader.biHeight = Height;
+    BitmapInfo.bmiHeader.biWidth = BitmapWidth;
+    BitmapInfo.bmiHeader.biHeight = -BitmapHeight;
     BitmapInfo.bmiHeader.biPlanes = 1;
     BitmapInfo.bmiHeader.biBitCount = 32;
     BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    HDC DeviceContext = CreateCompatibleDC(0);
+    int BytesPerPixel = 4;
+    int BitmapMemorySize = (BitmapWidth * BitmapHeight) * BytesPerPixel;
+    
+    BitmapMemory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
-    BitmapHandle = CreateDIBSection(DeviceContext, &BitmapInfo, DIB_RGB_COLORS, &BitmapMemory, 0, 0);
-
-    ReleaseDC(0, DeviceContext);
 }
 
 internal void
-Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width, int Height)
+Win32UpdateWindow(RECT* ViewportRect, HDC DeviceContext, int X, int Y, int Width, int Height)
 {
+    int ViewportWidth = ViewportRect->right - ViewportRect->left;
+    int ViewportHeight = ViewportRect->bottom - ViewportRect->top;
     StretchDIBits(DeviceContext,
-                  X, Y, Width, Height,
-                  X, Y, Width, Height,
+                  // X, Y, Width, Height,
+                  // X, Y, Width, Height,
+                  0, 0, BitmapWidth, BitmapHeight, 
+                  0, 0, ViewportWidth, ViewportHeight, 
                   &BitmapMemory,
                   &BitmapInfo,
                   DIB_RGB_COLORS,
@@ -93,7 +104,9 @@ Win32MainWindowCallback(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM L
             int Y = Paint.rcPaint.top;
             int Width = Paint.rcPaint.right - Paint.rcPaint.left;
             int Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
-            Win32UpdateWindow(DeviceContext, X, Y, Width, Height);
+            RECT ViewportRect;
+            GetClientRect(WindowHandle, &ViewportRect);
+            Win32UpdateWindow(&ViewportRect, DeviceContext, X, Y, Width, Height);
             EndPaint(WindowHandle, &Paint);
         } break;
         default:
