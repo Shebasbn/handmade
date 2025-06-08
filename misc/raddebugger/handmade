@@ -1,0 +1,11 @@
+// raddbg 0.9.19 project file
+
+recent_file: path: "../../src/win32_handmade.cpp"
+recent_file: path: "d:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_report.c"
+target:
+{
+  executable: "../../build/win32_handmade.exe"
+  working_directory: "../../data"
+  enabled: 1
+  debug_subprocesses: 0
+}
