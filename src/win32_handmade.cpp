@@ -454,6 +454,10 @@ WinMain(HINSTANCE Instance,
         LPSTR CommandLine,
         int ShowCode)
 {
+    LARGE_INTEGER PerfCountFrequencyResult;
+    QueryPerformanceFrequency(&PerfCountFrequencyResult);
+    int64 PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
     Win32LoadXInput();
     WNDCLASSEXW WindowClass = {};
 
@@ -507,6 +511,11 @@ WinMain(HINSTANCE Instance,
             GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
             GlobalRunning = true;
+
+            LARGE_INTEGER LastCounter;
+            QueryPerformanceCounter(&LastCounter);
+
+            int64 LastCycleCount = __rdtsc();
             while(GlobalRunning)
             {
                 MSG Message;
@@ -607,6 +616,22 @@ WinMain(HINSTANCE Instance,
                 win32_viewport_dimensions Viewport = Win32GetViewportDimensions(Window);
                 Win32DisplayBufferInWindow(DeviceContext, Viewport.Width, Viewport.Height, &GlobalFrameBuffer);
 
+                int64 EndCycleCount = __rdtsc();
+                LARGE_INTEGER EndCounter;
+                QueryPerformanceCounter(&EndCounter);
+                
+                int64 CyclesElapsed = EndCycleCount - LastCycleCount;
+                int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+                real32 MSPerFrame = ((1000.0f*(real32)CounterElapsed)/(real32)PerfCountFrequency);
+                real32 FPS = ((real32)PerfCountFrequency/(real32)CounterElapsed);
+                real32 MCPF = (real32)CyclesElapsed / (1000.0f * 1000.0f);
+
+                char Buffer[256];
+                swprintf_s((LPWSTR)Buffer, 256, L"%0.2fms/f,  %0.2ff/s,  %0.2fmc/f\n", MSPerFrame, FPS, MCPF);
+                OutputDebugStringW((LPWSTR)Buffer);
+
+                LastCycleCount = EndCycleCount;
+                LastCounter = EndCounter;
             }
         }
         else
