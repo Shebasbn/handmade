@@ -8,6 +8,7 @@
    $Notice: 
    ================================================================*/
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // NOTE(Sebas): Services that the platform layer provides to the game.
 
 
@@ -37,31 +38,54 @@ struct game_button_state
     bool32 EndedDown;
 };
 
+struct game_stick_state
+{
+    real32 StartX;
+    real32 StartY;
+    real32 MinX;
+    real32 MinY;
+    real32 MaxX;
+    real32 MaxY;
+    real32 EndX;
+    real32 EndY;
+};
+
 struct game_controller_input
 {
-    real32 LStartX;
-    real32 LStartY;
+    bool32 IsAnalog;
+    bool32 IsConnected;
 
-    real32 LMinX;
-    real32 LMinY;
-
-    real32 LMaxX;
-    real32 LMaxY;
-
-    real32 LEndX;
-    real32 LEndY;
+    union
+    {
+        game_stick_state LStick;
+        struct
+        {
+            real32 LStartX;
+            real32 LStartY;
+            real32 LMinX;
+            real32 LMinY;
+            real32 LMaxX;
+            real32 LMaxY;
+            real32 LEndX;
+            real32 LEndY;
+        };
+    };
     
-    real32 RStartX;
-    real32 RStartY;
-    
-    real32 RMinX;
-    real32 RMinY;
-
-    real32 RMaxX;
-    real32 RMaxY;
-
-    real32 REndX;
-    real32 REndY;
+    union
+    {
+        game_stick_state RStick;
+        struct
+        {
+            real32 RStartX;
+            real32 RStartY;
+            real32 RMinX;
+            real32 RMinY;
+            real32 RMaxX;
+            real32 RMaxY;
+            real32 REndX;
+            real32 REndY;
+        };
+    };    
 
     union
     {
@@ -82,8 +106,6 @@ struct game_controller_input
             game_button_state Back;
         };
     };
-    bool32 IsAnalog;
-    bool32 IsConnected;
 };
 
 struct game_input

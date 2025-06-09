@@ -51,7 +51,6 @@ window:
       }
       0.450348:
       {
-        selected
         watch: expression: "query:call_stack"
         watch: expression: "query:modules"
         memory:
@@ -67,7 +66,7 @@ window:
         }
       }
     }
-    0.664316: getting_started text:
+    0.664316: selected getting_started text:
     {
       selected
       expression: "file:\"W:/handmade/src/win32_handmade.cpp\".data"
@@ -77,15 +76,15 @@ window:
         input: ""
         cmd: search
       }
-      cursor_line: 665
+      cursor_line: 555
       cursor_column: 1
-      mark_line: 665
+      mark_line: 555
       mark_column: 1
     }
   }
   split_x
-  pos: 192 108
-  monitor: "\\\\.\\DISPLAY2"
+  pos: 228 36
+  monitor: "\\\\.\\DISPLAY1"
   maximized
 }
 keybindings:
