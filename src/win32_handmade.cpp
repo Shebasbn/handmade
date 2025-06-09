@@ -65,20 +65,7 @@ typedef double real64;
 #include <stdio.h>
 #include <malloc.h>
 
-struct win32_frame_buffer
-{
-    BITMAPINFO Info;
-    void* Memory;
-    int Width;
-    int Height;
-    int Pitch;
-};
-
-struct win32_viewport_dimensions
-{
-    int Width;
-    int Height;
-};
+#include "win32_handmade.h" 
 
 // TODO(Sebas):  This is a global for now.
 global_variable bool32 GlobalRunning;
@@ -269,20 +256,6 @@ Win32DisplayBufferInWindow(HDC DeviceContext,
                   DIB_RGB_COLORS,
                   SRCCOPY);
 }
-
-struct win32_sound_output
-{
-    // NOTE(Sebas): Sound test
-    int SamplesPerSecond;
-    int BytesPerSample;
-    int ToneHz;
-    int16 ToneVolume;
-    uint32 RunningSampleIndex;
-    int WavePeriod;
-    int SecondaryBufferSize;
-    real32 tSine;
-    int LatencySampleCount;
-};
 
 internal void
 Win32ClearBuffer(win32_sound_output* SoundOutput)
@@ -519,16 +492,11 @@ WinMain(HINSTANCE Instance,
             HDC DeviceContext = GetDC(Window);
 
             // NOTE(Sebas): Graphics test
-            int BlueOffset = 0;
-            int GreenOffset = 0;
 
             win32_sound_output SoundOutput = {};
             SoundOutput.SamplesPerSecond = 48000;
             SoundOutput.BytesPerSample  = sizeof(int16) * 2; 
-            SoundOutput.ToneHz = 256;
-            SoundOutput.ToneVolume = 3000;
             SoundOutput.RunningSampleIndex = 0;
-            SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
             SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
             SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSecond / 15;
             Win32InitDSound(Window, SoundOutput.SamplesPerSecond, SoundOutput.SecondaryBufferSize);
@@ -594,15 +562,11 @@ WinMain(HINSTANCE Instance,
                         int16 LThumbDeadzone = XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
                         int16 RThumbDeadzone = XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
 
-                        BlueOffset += (LStickX < -LThumbDeadzone || LStickX > LThumbDeadzone) ? LStickX / 4096: 0;
-                        GreenOffset -= (LStickY < -LThumbDeadzone || LStickY > LThumbDeadzone) ? LStickY / 4096: 0;
+                        // BlueOffset += (LStickX < -LThumbDeadzone || LStickX > LThumbDeadzone) ? LStickX / 4096: 0;
+                        // GreenOffset -= (LStickY < -LThumbDeadzone || LStickY > LThumbDeadzone) ? LStickY / 4096: 0;
 
-                        SoundOutput.ToneHz = 512 + (int)(256.0f*((real32)RStickY / 30000.0f));
-                        SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
-                        if(AButton)
-                        {
-                            
-                        }
+                        // SoundOutput.ToneHz = 512 + (int)(256.0f*((real32)RStickY / 30000.0f));
+                        // SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
                     }
                     else
                     {
@@ -648,7 +612,7 @@ WinMain(HINSTANCE Instance,
                 GameBuffer.Height = GlobalFrameBuffer.Height;
                 GameBuffer.Pitch = GlobalFrameBuffer.Pitch;
 
-                GameUpdateAndRender(&GameBuffer, BlueOffset, GreenOffset, &SoundBuffer, SoundOutput.ToneHz);
+                GameUpdateAndRender(&GameBuffer, &SoundBuffer);
                 // RenderWeirdGradient(&GlobalFrameBuffer, BlueOffset, GreenOffset);
 
                 // NOTE(Sebas): DirectSound output test

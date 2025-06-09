@@ -48,9 +48,40 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 }
 
 internal void
-GameUpdateAndRender(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset,
-                    game_sound_output_buffer* SoundBuffer, int ToneHz)
+GameUpdateAndRender(game_frame_buffer* Buffer, game_sound_output_buffer* SoundBuffer)
 {
+    local_persist int BlueOffset = 0;
+    local_persist int GreenOffset = 0;
+    local_persist int ToneHz = 256;
+    
+    game_controller_input* Input = &Input.PlayerInput[0];
+    if(Input->IsAnalog)
+    {
+        // NOTE(Sebas): Use analog movement tuning 
+        ToneHz = 256 + (int)(128.0f * (Input.RStick.EndX));
+        BlueOffset += (int)(4.0f * (Input.LStick.EndY));
+    }
+    else
+    {
+        // NOTE(Sebas): Use Digital movement tuning
+    }
+
+    // Input.AButtonEndedDown;
+    // Input.AButtonHalfTransitionCount;
+    if(Input.AButtonEndedDown)
+    { 
+        GreenOffset += 1;
+    }
+
+    // Input.StartX
+    // Input.MinX;
+    // Input.MaxX;
+    // Input.EndX;
+    // Input.StartY
+    // Input.MinY;
+    // Input.MaxY;
+    // Input.EndY
+
     // TODO(Sebas): Allow sample offsets for more roubst platform options
     GameOutputSound(SoundBuffer, ToneHz);
     RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);

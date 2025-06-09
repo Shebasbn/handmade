@@ -31,8 +31,13 @@ struct game_sound_output_buffer
     int16* Samples;
 };
 
+struct game_input
+{
+
+};
+
 internal void 
-GameUpdateAndRender(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset,
-                    game_sound_output_buffer* SoundBuffer, int ToneHz);
+GameUpdateAndRender(game_frame_buffer* Buffer, 
+                    game_sound_output_buffer* SoundBuffer);
 
 #endif // HANDMADE_H_
