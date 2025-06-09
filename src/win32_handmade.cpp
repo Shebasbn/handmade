@@ -157,7 +157,6 @@ Win32InitDSound(HWND Window, int32 SamplesPerSecond, int32 BufferSize)
                 LPDIRECTSOUNDBUFFER PrimaryBuffer;
                 if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDesc, &PrimaryBuffer, 0)))
                 {
-                    
                     if(SUCCEEDED(PrimaryBuffer->SetFormat(&Format)))
                     {
                         // NOTE(Sebas): We have finally set the format!
@@ -509,6 +508,7 @@ WinMain(HINSTANCE Instance,
                                                   SoundOutput.SecondaryBufferSize, 
                                                   MEM_RESERVE | MEM_COMMIT, 
                                                   PAGE_READWRITE);
+            game_input Input = {};
 
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
