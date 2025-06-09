@@ -56,12 +56,13 @@ GameUpdateAndRender(game_frame_buffer* Buffer,
     local_persist int GreenOffset = 0;
     local_persist int ToneHz = 256;
 
-    game_controller_input* Input = &Input->Controllers[0];
-    if(Input->IsAnalog)
+    game_controller_input* Controller = &Input->Controllers[0];
+    if(Controller->IsAnalog)
     {
         // NOTE(Sebas): Use analog movement tuning 
-        ToneHz = 256 + (int)(128.0f * (Input.RStick.EndX));
-        BlueOffset += (int)(4.0f * (Input.LStick.EndY));
+        ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.EndY));
+        BlueOffset += (int)(4.0f * ((real32)Controller->LStick.EndX));
+        GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.EndY));
     }
     else
     {
@@ -70,7 +71,7 @@ GameUpdateAndRender(game_frame_buffer* Buffer,
 
     // Input.AButtonEndedDown;
     // Input.AButtonHalfTransitionCount;
-    if(Input.AButtonEndedDown)
+    if(Controller->Down.EndedDown)
     { 
         GreenOffset += 1;
     }
