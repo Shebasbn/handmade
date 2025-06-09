@@ -7,7 +7,7 @@ window:
   size: 1536.000000 864.000000
   panels:
   {
-    0.25:
+    0.335684:
     {
       0.25:
       {
@@ -16,12 +16,7 @@ window:
           expression: ""
           selected
           normal: 0.354357 0.377778 0.267865
-          watch: LStickY
-          watch: LStickX
-          watch: XOffset
-          watch: YOffset
-          watch: "LStickX / 2048"
-          watch: "-1183 / 2048"
+          watch: SoundBuffer
         }
         watch: expression: "query:types"
       }
@@ -36,35 +31,43 @@ window:
         watch: expression: "query:breakpoints"
         watch: expression: "query:watch_pins"
       }
-      0.25:
+      0.049652:
       {
         disasm:
         {
+          selected
           expression: ""
           query: input: ""
         }
         text:
         {
-          selected
           expression: "query:output"
-          query: input: .27
+          query: input: ""
           cursor_line: 45
           cursor_column: 5
           mark_line: 45
           mark_column: 2
         }
       }
-      0.25:
+      0.450348:
       {
-        watch:
-        {
-          expression: "query:call_stack"
-          selected
-        }
+        selected
+        watch: expression: "query:call_stack"
         watch: expression: "query:modules"
+        memory:
+        {
+          selected
+          expression: "SoundBuffer.Samples"
+          cursor: Samples
+        }
+        memory:
+        {
+          expression: ""
+          cursor: DestSample
+        }
       }
     }
-    0.75: selected getting_started text:
+    0.664316: getting_started text:
     {
       selected
       expression: "file:\"W:/handmade/src/win32_handmade.cpp\".data"
@@ -74,9 +77,9 @@ window:
         input: ""
         cmd: search
       }
-      cursor_line: 603
+      cursor_line: 665
       cursor_column: 1
-      mark_line: 603
+      mark_line: 665
       mark_column: 1
     }
   }
