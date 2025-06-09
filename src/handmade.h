@@ -31,13 +31,69 @@ struct game_sound_output_buffer
     int16* Samples;
 };
 
+struct game_button_state
+{
+    int HalfTransitionCount;
+    bool32 EndedDown;
+};
+
+struct game_controller_input
+{
+    real32 LStartX;
+    real32 LStartY;
+
+    real32 LMinX;
+    real32 LMinY;
+
+    real32 LMaxX;
+    real32 LMaxY;
+
+    real32 LEndX;
+    real32 LEndY;
+    
+    real32 RStartX;
+    real32 RStartY;
+    
+    real32 RMinX;
+    real32 RMinY;
+
+    real32 RMaxX;
+    real32 RMaxY;
+
+    real32 REndX;
+    real32 REndY;
+
+    union
+    {
+        game_button_state Buttons[8];
+        struct
+        {
+            game_button_state DPadUp;
+            game_button_state DPadDown;
+            game_button_state DPadLeft;
+            game_button_state DPadRight;
+            game_button_state Up;
+            game_button_state Down;
+            game_button_state Left;
+            game_button_state Right;
+            game_button_state LeftShoulder;
+            game_button_state RightShoulder;
+            game_button_state Start;
+            game_button_state Back;
+        };
+    };
+    bool32 IsAnalog;
+    bool32 IsConnected;
+};
+
 struct game_input
 {
-
+    game_controller_input Controllers[4];
 };
 
 internal void 
 GameUpdateAndRender(game_frame_buffer* Buffer, 
-                    game_sound_output_buffer* SoundBuffer);
+                    game_sound_output_buffer* SoundBuffer,
+                    game_input* Input);
 
 #endif // HANDMADE_H_

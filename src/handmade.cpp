@@ -48,13 +48,15 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 }
 
 internal void
-GameUpdateAndRender(game_frame_buffer* Buffer, game_sound_output_buffer* SoundBuffer)
+GameUpdateAndRender(game_frame_buffer* Buffer,
+                    game_sound_output_buffer* SoundBuffer,
+                    game_input* Input)
 {
     local_persist int BlueOffset = 0;
     local_persist int GreenOffset = 0;
     local_persist int ToneHz = 256;
-    
-    game_controller_input* Input = &Input.PlayerInput[0];
+
+    game_controller_input* Input = &Input->Controllers[0];
     if(Input->IsAnalog)
     {
         // NOTE(Sebas): Use analog movement tuning 
