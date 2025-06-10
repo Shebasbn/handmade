@@ -31,17 +31,37 @@
 #define Megabytes(Value) (Kilobytes(Value)*1024)
 #define Gigabytes(Value) (Megabytes(Value)*1024)
 #define Terabytes(Value) (Gigabytes(Value)*1024)
-#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
-// NOTE(Sebas): Services that the platform layer provides to the game.
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
+internal uint32
+SafeTruncateUInt64(uint64 Value)
+{
+    // TODO(Sebas): Defines for maximum values
+    Assert(Value <= 0xFFFFFFFF);
+    uint32 Result = (uint32)Value;
+    return Result;
+}
+
+// NOTE(Sebas): Services that the platform layer provides to the game.
+#if HANDMADE_INTERNAL
+struct debug_read_file_result
+{
+    uint32 ContentsSize;
+    void* Contents;
+};
+internal debug_read_file_result DEBUGPlatformReadEntireFile(char* FileName);
+internal void DEBUGPlatformFreeFileMemory(void* Memory);
+internal bool32 DEBUGPlatformWriteEntireFile(char* FileName, void* Memory, uint32 MemorySize);
+#endif
 
 // NOTE(Sebas): Services that the game provides to the platform layer.
 // (This may expand in the future)
 // Four things - timing, controller/keyboard input, bitmap to usel, sound to use
-
 // TODO(Sebas): In the future, rendering _specifically_ will become a three-tiered abstraction!!!
 struct game_frame_buffer
 {
+    // NOTE(Sebas): Pixels are always 32 bit wide, Memory order BB GG RR XX
     void* Memory;
     int Width;
     int Height;
