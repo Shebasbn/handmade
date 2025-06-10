@@ -17,6 +17,11 @@ window:
           selected
           normal: 0.354357 0.377778 0.267865
           watch: SoundBuffer
+          watch: GameMemory
+          watch: Memory
+          watch: GameMemory
+          watch: GameState
+          watch: "&GameState.ToneHz, x"
         }
         watch: expression: "query:types"
       }
@@ -31,11 +36,11 @@ window:
         watch: expression: "query:breakpoints"
         watch: expression: "query:watch_pins"
       }
-      0.049652:
+      0.412115:
       {
+        selected
         disasm:
         {
-          selected
           expression: ""
           query: input: ""
         }
@@ -48,43 +53,55 @@ window:
           mark_line: 45
           mark_column: 2
         }
+        memory:
+        {
+          selected
+          cursor_size: 4
+          mark: 0x20000000000
+          num_columns: 4
+          cursor: 0x20000000000
+        }
       }
-      0.450348:
+      0.087885:
       {
         watch: expression: "query:call_stack"
         watch: expression: "query:modules"
         memory:
         {
-          selected
-          expression: "SoundBuffer.Samples"
-          cursor: Samples
+          expression: "Memory->PermanentStorage"
+          cursor_size: 4
+          cursor: 0x20000000000
+          mark: 0x20000000000
+          size: "Memory->PermanentStorageSize"
         }
         memory:
         {
-          expression: ""
-          cursor: DestSample
+          selected
+          expression: "GameMemory.TransientStorage"
+          cursor: "GameMemory.TransientStorage"
+          size: "GameMemory.TransientStorageSize"
         }
       }
     }
-    0.664316: selected getting_started text:
+    0.664316: getting_started text:
     {
       selected
-      expression: "file:\"W:/handmade/src/win32_handmade.cpp\".data"
+      expression: "file:\"W:/handmade/src/handmade.cpp\".data"
       auto: 1
       query:
       {
         input: ""
         cmd: search
       }
-      cursor_line: 555
+      cursor_line: 81
       cursor_column: 1
-      mark_line: 555
+      mark_line: 81
       mark_column: 1
     }
   }
   split_x
   pos: 228 36
-  monitor: "\\\\.\\DISPLAY1"
+  monitor: "\\\\.\\DISPLAY2"
   maximized
 }
 keybindings:
@@ -205,5 +222,6 @@ keybindings:
   { open_palette p ctrl shift }
   { log_marker m ctrl shift alt }
   { toggle_dev_menu d ctrl shift alt }
+  { memory m }
 }
 current_path: "W:/handmade/misc/raddebugger"
