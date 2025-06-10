@@ -27,10 +27,10 @@
     #define Assert(c)
 #endif
 
-#define Kilobytes(Value) ((Value)*1024)
-#define Megabytes(Value) (Kilobytes(Value)*1024)
-#define Gigabytes(Value) (Megabytes(Value)*1024)
-#define Terabytes(Value) (Gigabytes(Value)*1024)
+#define Kilobytes(Value) ((Value)*1024LL)
+#define Megabytes(Value) (Kilobytes(Value)*1024LL)
+#define Gigabytes(Value) (Megabytes(Value)*1024LL)
+#define Terabytes(Value) (Gigabytes(Value)*1024LL)
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
@@ -96,7 +96,7 @@ struct game_stick_state
 struct game_controller_input
 {
     bool32 IsAnalog;
-    bool32 IsConnected;
+    bool32 IsKeyboard;
 
     union
     {
