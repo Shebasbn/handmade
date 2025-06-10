@@ -90,7 +90,7 @@ GameUpdateAndRender(game_memory* Memory,
 
     // Input.AButtonEndedDown;
     // Input.AButtonHalfTransitionCount;
-    if(Controller->Down.EndedDown)
+    if(Controller->DPadDown.EndedDown)
     { 
         GameState->GreenOffset += 1;
     }
