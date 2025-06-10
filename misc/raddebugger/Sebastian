@@ -7,7 +7,7 @@ window:
   size: 1536.000000 864.000000
   panels:
   {
-    0.335684:
+    0.489973:
     {
       0.25:
       {
@@ -22,6 +22,7 @@ window:
           watch: GameMemory
           watch: GameState
           watch: "&GameState.ToneHz, x"
+          watch: Result
         }
         watch: expression: "query:types"
       }
@@ -41,6 +42,7 @@ window:
         selected
         disasm:
         {
+          selected
           expression: ""
           query: input: ""
         }
@@ -55,11 +57,10 @@ window:
         }
         memory:
         {
-          selected
           cursor_size: 4
-          mark: 0x20000000000
-          num_columns: 4
-          cursor: 0x20000000000
+          mark: 0x672d56ffff1
+          num_columns: 23
+          cursor: "File.Contents"
         }
       }
       0.087885:
@@ -83,25 +84,25 @@ window:
         }
       }
     }
-    0.664316: getting_started text:
+    0.510027: getting_started text:
     {
       selected
-      expression: "file:\"W:/handmade/src/handmade.cpp\".data"
+      expression: "file:\"W:/handmade/src/win32_handmade.cpp\".data"
       auto: 1
       query:
       {
         input: ""
         cmd: search
       }
-      cursor_line: 81
+      cursor_line: 144
       cursor_column: 1
-      mark_line: 81
+      mark_line: 144
       mark_column: 1
     }
   }
   split_x
-  pos: 228 36
-  monitor: "\\\\.\\DISPLAY2"
+  pos: 192 78
+  monitor: "\\\\.\\DISPLAY1"
   maximized
 }
 keybindings:
@@ -224,4 +225,4 @@ keybindings:
   { toggle_dev_menu d ctrl shift alt }
   { memory m }
 }
-current_path: "W:/handmade/misc/raddebugger"
+current_path: "W:/handmade/build"
