@@ -48,21 +48,28 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 }
 
 internal void
-GameUpdateAndRender(game_frame_buffer* Buffer,
+GameUpdateAndRender(game_memory* Memory,
+                    game_frame_buffer* Buffer,
                     game_sound_output_buffer* SoundBuffer,
                     game_input* Input)
 {
-    local_persist int BlueOffset = 0;
-    local_persist int GreenOffset = 0;
-    local_persist int ToneHz = 256;
+    Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
+    game_state* GameState = (game_state*)Memory->PermanentStorage;
+    if(!Memory->IsInitialized)
+    {
+        GameState->ToneHz = 255;
+
+        // TODO(Sebas): This may be more appropriate to do in the platform layer
+        Memory->IsInitialized = true;
+    }
 
     game_controller_input* Controller = &Input->Controllers[0];
     if(Controller->IsAnalog)
     {
         // NOTE(Sebas): Use analog movement tuning 
-        ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.EndY));
-        BlueOffset += (int)(4.0f * ((real32)Controller->LStick.EndX));
-        GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.EndY));
+        GameState->ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.EndY));
+        GameState->BlueOffset += (int)(4.0f * ((real32)Controller->LStick.EndX));
+        GameState->GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.EndY));
     }
     else
     {
@@ -73,7 +80,7 @@ GameUpdateAndRender(game_frame_buffer* Buffer,
     // Input.AButtonHalfTransitionCount;
     if(Controller->Down.EndedDown)
     { 
-        GreenOffset += 1;
+        GameState->GreenOffset += 1;
     }
 
     // Input.StartX
@@ -86,6 +93,6 @@ GameUpdateAndRender(game_frame_buffer* Buffer,
     // Input.EndY
 
     // TODO(Sebas): Allow sample offsets for more roubst platform options
-    GameOutputSound(SoundBuffer, ToneHz);
-    RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);
+    GameOutputSound(SoundBuffer, GameState->ToneHz);
+    RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
 }

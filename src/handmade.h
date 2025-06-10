@@ -7,7 +7,30 @@
    $Creator: Sebastian Bautista
    $Notice: 
    ================================================================*/
+/*
+ * NOTE(Sebas): 
+ * HANDMADE_INTERNAL:
+ *  0 - Build for public release
+ *  1 - Build for developer only
+ * HANDMADE_SLOW:
+ *  0 - No slow code allowed!
+ *  1 - Slow code welcome.
+*/
+#if !defined(AssertBreak)
+    #define AssertBreak() (*(int*)0 = 0)
+#endif
 
+#define Stmnt(S) do{ S }while(0)
+#if HANDMADE_SLOW 
+    #define Assert(c) Stmnt(if(!(c)){ AssertBreak(); })
+#else
+    #define Assert(c)
+#endif
+
+#define Kilobytes(Value) ((Value)*1024)
+#define Megabytes(Value) (Kilobytes(Value)*1024)
+#define Gigabytes(Value) (Megabytes(Value)*1024)
+#define Terabytes(Value) (Gigabytes(Value)*1024)
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 // NOTE(Sebas): Services that the platform layer provides to the game.
 
@@ -110,12 +133,33 @@ struct game_controller_input
 
 struct game_input
 {
+    // TODO(Sebas): Insert clock values here.
+    // real32 GameClock;
     game_controller_input Controllers[4];
 };
 
+struct game_memory
+{
+    bool32 IsInitialized;
+    uint64 PermanentStorageSize;
+    void* PermanentStorage; // NOTE(Sebas): REQUIRED to be cleared to zero at startup
+    uint64 TransientStorageSize;
+    void* TransientStorage; // NOTE(Sebas): REQUIRED to be cleared to zero at startup
+};
+
 internal void 
-GameUpdateAndRender(game_frame_buffer* Buffer, 
+GameUpdateAndRender(game_memory* Memory,
+                    game_frame_buffer* Buffer, 
                     game_sound_output_buffer* SoundBuffer,
                     game_input* Input);
+
+/////////////////////////////////////
+struct game_state
+{
+    int ToneHz;
+    int GreenOffset;
+    int BlueOffset;
+};
+
 
 #endif // HANDMADE_H_
