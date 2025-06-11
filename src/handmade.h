@@ -120,18 +120,25 @@ struct game_controller_input
             game_button_state MoveDown;
             game_button_state MoveLeft;
             game_button_state MoveRight;
+            
             game_button_state CameraMoveUp;
             game_button_state CameraMoveDown;
             game_button_state CameraMoveLeft;
             game_button_state CameraMoveRight;
+
             game_button_state ActionUp;
             game_button_state ActionDown;
             game_button_state ActionLeft;
             game_button_state ActionRight;
+
             game_button_state LeftShoulder;
             game_button_state RightShoulder;
             game_button_state Start;
             game_button_state Back;
+
+
+            // NOTE(Sebas): All buttons most be added above this line
+            game_button_state Terminator;
         };
     };
 };
@@ -142,7 +149,7 @@ struct game_input
     // real32 GameClock;
     game_controller_input Controllers[5];
 };
-inline game_controller_input* GetController(game_input* Input, int ControllerIndex) 
+inline game_controller_input* GetController(game_input* Input, unsigned int ControllerIndex) 
 {
     Assert(ControllerIndex < ArrayCount(Input->Controllers));
     return &Input->Controllers[ControllerIndex];
