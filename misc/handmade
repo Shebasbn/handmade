@@ -1,10 +1,11 @@
 // raddbg 0.9.19 project file
 
 recent_file: path: "../src/win32_handmade.cpp"
+recent_file: path: "../src/handmade.h"
+recent_file: path: "d:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_report.c"
 recent_file: path: "../../../src/handmade.cpp"
 recent_file: path: "../../../src/win32_handmade.cpp"
 recent_file: path: "d:/a/_work/1/s/src/vctools/crt/vcstartup/src/misc/amd64/chkstk.asm"
-recent_file: path: "d:/a/_work/1/s/src/vctools/crt/vcstartup/src/gs/gs_report.c"
 breakpoint:
 {
   source_location: "../../../src/win32_handmade.cpp:715:1"

@@ -47,10 +47,6 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
     }
 }
 
-#define WIDE2(x) L##x
-#define WIDE1(x) WIDE2(x)
-#define WFILE WIDE1(__FILE__)
-
 internal void
 GameUpdateAndRender(game_memory* Memory,
                     game_frame_buffer* Buffer,
@@ -75,35 +71,59 @@ GameUpdateAndRender(game_memory* Memory,
         Memory->IsInitialized = true;
     }
 
-    game_controller_input* Controller = &Input->Controllers[0];
-    if(Controller->IsAnalog)
+    for (int ControllerIndex = 0; 
+         ControllerIndex < ArrayCount(Input->Controllers);
+         ControllerIndex++)
     {
-        // NOTE(Sebas): Use analog movement tuning 
-        GameState->ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.EndY));
-        GameState->BlueOffset += (int)(4.0f * ((real32)Controller->LStick.EndX));
-        GameState->GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.EndY));
-    }
-    else
-    {
-        // NOTE(Sebas): Use Digital movement tuning
-    }
+        game_controller_input* Controller = GetController(Input, ControllerIndex);
+        if (Controller->IsConnected)
+        {
+            if(Controller->IsAnalog)
+            {
+                // NOTE(Sebas): Use analog movement tuning 
+                GameState->ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.AverageY));
+                GameState->BlueOffset += (int)(4.0f * ((real32)Controller->LStick.AverageX));
+                GameState->GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.AverageY));
+            }
+            else
+            {
+                if(Controller->MoveDown.EndedDown)
+                { 
+                    GameState->GreenOffset += 1;
+                }
+                else if(Controller->MoveUp.EndedDown)
+                {
+                    GameState->GreenOffset -= 1;
+                }
+                if(Controller->MoveRight.EndedDown)
+                { 
+                    GameState->BlueOffset += 1;
+                }
+                else if(Controller->MoveLeft.EndedDown)
+                {
+                    GameState->BlueOffset -= 1;
+                }
+                // NOTE(Sebas): Use Digital movement tuning
+            }
 
-    // Input.AButtonEndedDown;
-    // Input.AButtonHalfTransitionCount;
-    if(Controller->DPadDown.EndedDown)
-    { 
-        GameState->GreenOffset += 1;
+            // Input.AButtonEndedDown;
+            // Input.AButtonHalfTransitionCount;
+
+
+            // Input.StartX
+            // Input.MinX;
+            // Input.MaxX;
+            // Input.EndX;
+            // Input.StartY
+            // Input.MinY;
+            // Input.MaxY;
+            // Input.EndY
+        }
+        else
+        {
+           // TODO(Sebas): What do we do if controller is not connected? 
+        }
     }
-
-    // Input.StartX
-    // Input.MinX;
-    // Input.MaxX;
-    // Input.EndX;
-    // Input.StartY
-    // Input.MinY;
-    // Input.MaxY;
-    // Input.EndY
-
     // TODO(Sebas): Allow sample offsets for more roubst platform options
     GameOutputSound(SoundBuffer, GameState->ToneHz);
     RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
