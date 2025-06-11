@@ -410,30 +410,46 @@ Win32ProcessXInputDigitalButton(game_button_state* OldState, game_button_state* 
     NewState->HalfTransitionCount = (OldState->EndedDown != NewState->EndedDown) ? 1 : 0; 
 }
 
-internal void
-Win32ProcessXInputStickValue(game_stick_state* Stick, SHORT X, SHORT Y, SHORT ThumbDeadzone)
+internal real32
+Win32ProcessXInputStickValue(SHORT Value, SHORT DeadzoneThreshold)
 {
-    float Magnitude = (real32)sqrt(X*X + Y*Y);
-    float NormalizedMagnitude = 0;
+    real32 Result = 0;
 
-    float normalizedX = X / Magnitude;
-    float normalizedY = Y / Magnitude;
-
-    if (Magnitude > ThumbDeadzone)
+    if (Value < -DeadzoneThreshold)
     {
-        if (Magnitude > 32767) Magnitude = 32767;
-        Magnitude -= ThumbDeadzone;
-        NormalizedMagnitude = Magnitude / (32767 - ThumbDeadzone);
-
+        Result = (real32)((Value + DeadzoneThreshold) / (32768.0f - DeadzoneThreshold));
     }
-    else
+    else if (Value > DeadzoneThreshold)
     {
-        Magnitude = 0;
+        Result = (real32)((Value - DeadzoneThreshold) / (32767.0f - DeadzoneThreshold));
     }
-
-    Stick->AverageX = normalizedX * NormalizedMagnitude;
-    Stick->AverageY = normalizedY * NormalizedMagnitude;
+    return Result;
 }
+
+// internal void
+// Win32ProcessXInputStickValue(game_stick_state* Stick, SHORT X, SHORT Y, SHORT ThumbDeadzone)
+// {
+//     float Magnitude = (real32)sqrt(X*X + Y*Y);
+//     float NormalizedMagnitude = 0;
+//
+//     float normalizedX = X / Magnitude;
+//     float normalizedY = Y / Magnitude;
+//
+//     if (Magnitude > ThumbDeadzone)
+//     {
+//         if (Magnitude > 32767) Magnitude = 32767;
+//         Magnitude -= ThumbDeadzone;
+//         NormalizedMagnitude = Magnitude / (32767 - ThumbDeadzone);
+//
+//     }
+//     else
+//     {
+//         Magnitude = 0;
+//     }
+//
+//     Stick->AverageX = normalizedX * NormalizedMagnitude;
+//     Stick->AverageY = normalizedY * NormalizedMagnitude;
+// }
 
 internal void
 Win32ProcessPendingMessages(game_controller_input* KeyboardController)
@@ -692,8 +708,7 @@ WinMain(HINSTANCE Instance,
                             // TODO(Sebas): We can't zero everything because the up/down state will be wrong
                             game_controller_input* OldKeyboardController = GetController(OldInput, ControllerIndex);
                             game_controller_input* NewKeyboardController = GetController(NewInput, ControllerIndex);
-                            game_controller_input ZeroController = {};
-                            *NewKeyboardController = ZeroController;
+                            *NewKeyboardController = {};
                             NewKeyboardController->IsConnected = true;
                             for (int i = 0; 
                                     i < ArrayCount(NewKeyboardController->Buttons);
@@ -718,15 +733,14 @@ WinMain(HINSTANCE Instance,
                                 // TODO(Sebas): See if ControllerState.dwPacketNumber increments to rapidly
                                 XINPUT_GAMEPAD* Pad = &ControllerState.Gamepad;
 
-                                NewController->IsAnalog = true;
-                                Win32ProcessXInputStickValue(&NewController->LStick, 
-                                        Pad->sThumbLX, Pad->sThumbLY, 
-                                        XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-
-                                Win32ProcessXInputStickValue(&NewController->RStick,
-                                        Pad->sThumbRX, Pad->sThumbRY, 
-                                        XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
-
+                                NewController->LAverageX = Win32ProcessXInputStickValue(Pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                                NewController->LAverageY = Win32ProcessXInputStickValue(Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                                NewController->RAverageX = Win32ProcessXInputStickValue(Pad->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+                                NewController->RAverageY = Win32ProcessXInputStickValue(Pad->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+                                if ((NewController->LAverageX != 0)  || (NewController->LAverageY != 0)) 
+                                {
+                                    NewController->IsAnalog = true;
+                                }
                                 real32 Threshold = 0.5f;
                                 Win32ProcessXInputDigitalButton(&OldController->MoveLeft, &NewController->MoveLeft, 
                                         ((NewController->LAverageX < -Threshold) ? 1 : 0), 1);
