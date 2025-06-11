@@ -83,34 +83,21 @@ struct game_button_state
 
 struct game_stick_state
 {
-    real32 StartX;
-    real32 StartY;
-    real32 MinX;
-    real32 MinY;
-    real32 MaxX;
-    real32 MaxY;
-    real32 EndX;
-    real32 EndY;
+    real32 AverageX;
+    real32 AverageY;
 };
 
 struct game_controller_input
 {
     bool32 IsAnalog;
-    bool32 IsKeyboard;
-
+    bool32 IsConnected;
     union
     {
         game_stick_state LStick;
         struct
         {
-            real32 LStartX;
-            real32 LStartY;
-            real32 LMinX;
-            real32 LMinY;
-            real32 LMaxX;
-            real32 LMaxY;
-            real32 LEndX;
-            real32 LEndY;
+            real32 LAverageX;
+            real32 LAverageY;
         };
     };
     
@@ -119,30 +106,28 @@ struct game_controller_input
         game_stick_state RStick;
         struct
         {
-            real32 RStartX;
-            real32 RStartY;
-            real32 RMinX;
-            real32 RMinY;
-            real32 RMaxX;
-            real32 RMaxY;
-            real32 REndX;
-            real32 REndY;
+            real32 RAverageX;
+            real32 RAverageY;
         };
     };    
 
     union
     {
-        game_button_state Buttons[8];
+        game_button_state Buttons[16];
         struct
         {
-            game_button_state DPadUp;
-            game_button_state DPadDown;
-            game_button_state DPadLeft;
-            game_button_state DPadRight;
-            game_button_state Up;
-            game_button_state Down;
-            game_button_state Left;
-            game_button_state Right;
+            game_button_state MoveUp;
+            game_button_state MoveDown;
+            game_button_state MoveLeft;
+            game_button_state MoveRight;
+            game_button_state CameraMoveUp;
+            game_button_state CameraMoveDown;
+            game_button_state CameraMoveLeft;
+            game_button_state CameraMoveRight;
+            game_button_state ActionUp;
+            game_button_state ActionDown;
+            game_button_state ActionLeft;
+            game_button_state ActionRight;
             game_button_state LeftShoulder;
             game_button_state RightShoulder;
             game_button_state Start;
@@ -155,8 +140,13 @@ struct game_input
 {
     // TODO(Sebas): Insert clock values here.
     // real32 GameClock;
-    game_controller_input Controllers[4];
+    game_controller_input Controllers[5];
 };
+inline game_controller_input* GetController(game_input* Input, int ControllerIndex) 
+{
+    Assert(ControllerIndex < ArrayCount(Input->Controllers));
+    return &Input->Controllers[ControllerIndex];
+}
 
 struct game_memory
 {
