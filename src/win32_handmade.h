@@ -15,6 +15,7 @@ struct win32_frame_buffer
     int Width;
     int Height;
     int Pitch;
+    int BytesPerPixel;
 };
 
 struct win32_viewport_dimensions
@@ -31,6 +32,12 @@ struct win32_sound_output
     uint32 RunningSampleIndex;
     int SecondaryBufferSize;
     int LatencySampleCount;
+};
+
+struct win32_debug_time_marker
+{
+    DWORD PlayCursor;
+    DWORD WriteCursor;
 };
 
 #endif // WIN32_HANDMADE_H_
