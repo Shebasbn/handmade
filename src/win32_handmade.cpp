@@ -690,7 +690,7 @@ WinMain(HINSTANCE Instance,
     WindowClass.lpszClassName = L"HandmadeHeroeWindowClass";
 
     // TODO(Sebas): How do we reliably query this on Windows?
-#define FramesOfAudioLatency 2
+#define FramesOfAudioLatency 3 
 #define MonitorRefreshHz 60
 #define GameUpdateHz (int32)((real32)MonitorRefreshHz / 2.0f)
     real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
@@ -732,7 +732,7 @@ WinMain(HINSTANCE Instance,
 
             GlobalRunning = true;
 #if 0
-// NOTE(Sebas): This tests the play/write cursor update frequency on my machine
+            // NOTE(Sebas): This tests the play/write cursor update frequency on my machine
             while(GlobalRunning)
             {
                 DWORD PlayCursor;
@@ -919,9 +919,6 @@ WinMain(HINSTANCE Instance,
                         {
                             BytesToWrite = TargetCursor - BytesToLock;
                         }
-                        char TextBuffer[256];
-                        swprintf_s((LPWSTR)TextBuffer, 256, L"PC:%u WC:%u BTL:%u TC:%u BTW:%u\n", LastPlayCursor, LastWriteCursor, BytesToLock, TargetCursor, BytesToWrite);
-                        OutputDebugStringW((LPWSTR)TextBuffer);
                     }
 
                     game_sound_output_buffer SoundBuffer = {};
@@ -940,9 +937,14 @@ WinMain(HINSTANCE Instance,
 
                     if(SoundIsValid)
                     {
+#if HANDMADE_INTERNAL
                         DWORD PCursor;
                         DWORD WCursor;
                         GlobalSecondaryBuffer->GetCurrentPosition(&PCursor, &WCursor);
+                        char TextBuffer[256];
+                        swprintf_s((LPWSTR)TextBuffer, 256, L"LPC:%u LWC:%u BTL:%u TC:%u BTW:%u - PC:%u WC:%u\n", LastPlayCursor, LastWriteCursor, BytesToLock, TargetCursor, BytesToWrite, PCursor, WCursor);
+                        OutputDebugStringW((LPWSTR)TextBuffer);
+#endif
                         Win32FillSoundBuffer(&SoundOutput, BytesToLock, BytesToWrite, &SoundBuffer);
                     }
                     else
