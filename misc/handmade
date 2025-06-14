@@ -13,6 +13,6 @@ breakpoint:
 target:
 {
   executable: "../build/win32_handmade.exe"
-  working_directory: "../data"
+  working_directory: "../build/"
   enabled: 1
 }
