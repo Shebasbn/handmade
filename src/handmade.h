@@ -167,8 +167,10 @@ struct game_memory
 internal void 
 GameUpdateAndRender(game_memory* Memory,
                     game_frame_buffer* Buffer, 
-                    game_sound_output_buffer* SoundBuffer,
                     game_input* Input);
+
+internal void 
+GameGetSoundSamples(game_memory* Memory, game_sound_output_buffer* SoundBuffer);
 
 /////////////////////////////////////
 struct game_state
