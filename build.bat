@@ -8,6 +8,6 @@ pushd .\build
 rem del win32_handmade.exe
 rem 32-bit build
 rem cl %cl_opts% ..\src\win32_handmade.cpp -subsystem:windows,5.1 /link %link_opts% 
-cl %cl_opts% -Fmhandmade.map ..\src\handmade.cpp /LD /link /EXPORT:GameGetSoundSamples /EXPORT:GameUpdateAndRender
+cl %cl_opts% -Fmhandmade.map ..\src\handmade.cpp -LD /link -incremental:no -opt:ref -EXPORT:GameGetSoundSamples -EXPORT:GameUpdateAndRender
 cl %cl_opts% -Fmwin32_handmade.map ..\src\win32_handmade.cpp /link %link_opts% 
 popd

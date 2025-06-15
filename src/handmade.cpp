@@ -44,7 +44,7 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
             uint8 Green = (uint8)(y + GreenOffset);
             uint8 Red = 0;
             uint8 Alpha = 255;
-            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 8) | (Blue)); // BLUE Value
+            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 16) | (Blue)); // BLUE Value
         }
         Row += Buffer->Pitch;
     }
@@ -134,15 +134,3 @@ extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
     game_state* GameState = (game_state*)Memory->PermanentStorage;
     GameOutputSound(SoundBuffer, GameState, GameState->ToneHz);
 }
-
-#if HANDMAD_WIN32
-#include "windows.h"
-
-BOOL WINAPI 
-DllMain(HINSTANCE hinstDLL,
-        DWORD     fdwReason,
-        LPVOID    lpvReserved)
-{
-    return TRUE;
-}
-#endif
