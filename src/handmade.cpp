@@ -17,8 +17,12 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
     int16* SampleOut = SoundBuffer->Samples;
     for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; SampleIndex++)
     {
+#if 0
         real32 SineValue = sinf(GameState->tSine);
         int16 SampleValue = (int16)(SineValue * ToneVolume);
+#else
+        int16 SampleValue = 0;
+#endif
         *SampleOut++ = SampleValue;
         *SampleOut++ = SampleValue;
 
@@ -33,6 +37,11 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
 internal void
 RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 {
+#if 1
+    BlueOffset = 0;
+    GreenOffset = 0;
+#else
+#endif
     uint8* Row = (uint8*)Buffer->Memory;
     for(int y = 0; y < Buffer->Height; y++)
     {
@@ -47,6 +56,52 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
             *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 16) | (Blue)); // BLUE Value
         }
         Row += Buffer->Pitch;
+    }
+}
+
+internal void
+RenderPlayer(game_frame_buffer* Buffer, int* PlayerX, int* PlayerY)
+{
+    uint32 Color = 0xFFFFFFFF;
+    int Top = *PlayerY;
+    int Bottom = *PlayerY + 10;
+    int Left = *PlayerX;
+    int Right = *PlayerX + 10;
+
+    if (Top <= 0)
+    {
+        Top = 0;
+        Bottom = Top + 10;
+    }
+    if (Left <= 0)
+    {
+        Left = 0;
+        Right = Left + 10;
+    }
+
+    if (Bottom > Buffer->Height)
+    {
+        Bottom = Buffer->Height;
+        Top = Bottom - 10;
+    }
+    if (Right > Buffer->Width)
+    {
+        Right = Buffer->Width;
+        Left = Right - 10;
+    }
+
+    *PlayerX = Left;
+    *PlayerY = Top;
+
+    for (int X = Left; X < Right; X++)
+    {
+        uint8* Pixel = ((uint8*)Buffer->Memory + X * Buffer->BytesPerPixel + Top * Buffer->Pitch);
+
+        for (int Y = Top; Y < Bottom; Y++)
+        {
+            *(uint32*)Pixel = Color;
+            Pixel += Buffer->Pitch;
+        }
     }
 }
 
@@ -68,6 +123,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->ToneHz = 255;
         GameState->tSine = 0.0f;
 
+        GameState->PlayerX = 100;
+        GameState->PlayerY = 100;
+
         // TODO(Sebas): This may be more appropriate to do in the platform layer
         Memory->IsInitialized = true;
     }
@@ -85,6 +143,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 GameState->ToneHz = 256 + (int)(128.0f * ((real32)Controller->RStick.AverageY));
                 GameState->BlueOffset += (int)(4.0f * ((real32)Controller->LStick.AverageX));
                 GameState->GreenOffset -= (int)(4.0f * ((real32)Controller->LStick.AverageY));
+                GameState->PlayerX += (int)(4.0f * ((real32)Controller->LStick.AverageX));
+                GameState->PlayerY -= (int)(4.0f * ((real32)Controller->LStick.AverageY));
             }
             else
             {
@@ -107,6 +167,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 // NOTE(Sebas): Use Digital movement tuning
             }
 
+            if (Controller->ActionDown.EndedDown)
+            {
+                GameState->PlayerY -= 10;
+            }
+
             // Input.AButtonEndedDown;
             // Input.AButtonHalfTransitionCount;
 
@@ -127,6 +192,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     }
     // TODO(Sebas): Allow sample offsets for more roubst platform options
     RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
+    RenderPlayer(Buffer, &GameState->PlayerX, &GameState->PlayerY);
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
