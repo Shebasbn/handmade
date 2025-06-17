@@ -64,6 +64,67 @@ global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPGUID lpGuid, LPDIRECTSOUND* ppDS, LPUNKNOWN  pUnkOuter )
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
+internal void
+CatStrings(wchar_t* SourceA, size_t SourceACount, 
+           wchar_t* SourceB, size_t SourceBCount,
+           wchar_t* Dest, size_t DestCount)
+{
+    // TODO(Sebas): Dest bounds checking.
+    for (int Index = 0;
+         Index < SourceACount;
+         Index++)
+    {
+        *Dest++ = *SourceA++;
+    }
+    for (int Index = 0;
+         Index < SourceBCount;
+         Index++)
+    {
+        *Dest++ = *SourceB++;
+    }
+    *Dest++ = 0;
+}
+
+internal void
+Win32GetEXEFileName(win32_state* Win32State)
+{
+    // NOTE(Sebas): Never use MAX_PATH in code that is user-facing, because it can be
+    // dangerous and lead to bad results.
+    DWORD SizeOfFileName = GetModuleFileNameW(0, Win32State->EXEFileName, sizeof(Win32State->EXEFileName));
+
+    Win32State->OnePastLastEXEFileNameSlash = Win32State->EXEFileName;
+    for (wchar_t* Scan = Win32State->EXEFileName;
+        *Scan;
+        ++Scan)
+    {
+        if (*Scan == '\\')
+        {
+            Win32State->OnePastLastEXEFileNameSlash = Scan + 1;
+        }
+    }
+}
+
+internal int
+StringLengthW(wchar_t* String)
+{
+    int Count = 0;
+    while(*String++)
+    {
+        Count++;
+    }
+    return Count;
+}
+
+internal void
+Win32BuildEXEPathFileName(win32_state* Win32State, wchar_t* FileName, 
+                          int DestCount, wchar_t* Dest)
+{
+   CatStrings(Win32State->EXEFileName, 
+              Win32State->OnePastLastEXEFileNameSlash - Win32State->EXEFileName,
+              FileName, StringLengthW(FileName),
+              Dest, DestCount);
+}
+
 DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
 {
     if (Memory)
@@ -350,7 +411,7 @@ Win32DisplayBufferInWindow(HDC DeviceContext,
     // TODO(Sebas): Aspect ratio correction  
     // TODO(Sebas): Play with stretch modes 
     StretchDIBits(DeviceContext,
-                  0, 0, ViewportWidth, ViewportHeight, 
+                  0, 0, Buffer->Width, Buffer->Height, 
                   0, 0, Buffer->Width, Buffer->Height,
                   Buffer->Memory,
                   &Buffer->Info,
@@ -485,11 +546,21 @@ Win32ProcessXInputStickValue(SHORT Value, SHORT DeadzoneThreshold)
 // }
 
 internal void
+Win32GetInputFileLocation(win32_state* Win32State, int SlotIndex, 
+                          int DestCount, wchar_t* Dest)
+{
+    Assert(SlotIndex == 1);
+    Win32BuildEXEPathFileName(Win32State, L"loop_edit.hmi", DestCount, Dest);
+}
+
+internal void
 Win32BeginRecordingInput(win32_state* Win32State, int InputRecordingIndex)
 {
     Win32State->InputRecordingIndex = InputRecordingIndex; 
     // TODO(Sebas): These files must go in a temporary/build directory!
-    wchar_t* FileName = L"foo.hmi";
+    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+    Win32GetInputFileLocation(Win32State, InputRecordingIndex, ArrayCount(FileName), FileName); 
+
     Win32State->RecordingHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
     DWORD BytesToWrite = (DWORD)Win32State->TotalSize;
     Assert(BytesToWrite == Win32State->TotalSize);
@@ -836,66 +907,29 @@ Win32DebugSyncDisplay(win32_frame_buffer* FrameBuffer, win32_sound_output* Sound
     }
 }
 
-internal void
-CatStrings(wchar_t* SourceA, size_t SourceACount, 
-           wchar_t* SourceB, size_t SourceBCount,
-           wchar_t* Dest, size_t DestCount)
-{
-    // TODO(Sebas): Dest bounds checking.
-    for (int Index = 0;
-         Index < SourceACount;
-         Index++)
-    {
-        *Dest++ = *SourceA++;
-    }
-    for (int Index = 0;
-         Index < SourceBCount;
-         Index++)
-    {
-        *Dest++ = *SourceB++;
-    }
-    *Dest++ = 0;
-}
-
 int WINAPI
 WinMain(HINSTANCE Instance,
         HINSTANCE PrevInstance,
         LPSTR CommandLine,
         int ShowCode)
 {
-    // NOTE(Sebas): Never use MAX_PATH in code that is user-facing, because it can be
-    // dangerous and lead to bad results.
-    wchar_t EXEFileName[MAX_PATH];
-    DWORD SizeOfFileName = GetModuleFileNameW(0, EXEFileName, sizeof(EXEFileName));
-
-    wchar_t* OnePastLastSlash = EXEFileName;
-    for (wchar_t* Scan = EXEFileName;
-        *Scan;
-        ++Scan)
-    {
-        if (*Scan == '\\')
-        {
-            OnePastLastSlash = Scan + 1;
-        }
-    }
-
-    wchar_t SourceGameCodeDLLFilename[] = L"handmade.dll";
-    wchar_t SourceGameCodeDLLFullPath[MAX_PATH];
-
-   CatStrings(EXEFileName, OnePastLastSlash - EXEFileName,
-              SourceGameCodeDLLFilename, ArrayCount(SourceGameCodeDLLFilename) - 1,
-              SourceGameCodeDLLFullPath, ArrayCount(SourceGameCodeDLLFullPath));
-
-    wchar_t TempGameCodeDLLFilename[] = L"handmade_temp.dll";
-    wchar_t TempGameCodeDLLFullPath[MAX_PATH];
-
-    CatStrings(EXEFileName, OnePastLastSlash - EXEFileName,
-              TempGameCodeDLLFilename, ArrayCount(TempGameCodeDLLFilename) - 1,
-              TempGameCodeDLLFullPath, ArrayCount(TempGameCodeDLLFullPath));
+    win32_state Win32State = {};
 
     LARGE_INTEGER PerfCountFrequencyResult;
     QueryPerformanceFrequency(&PerfCountFrequencyResult);
     GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
+    Win32GetEXEFileName(&Win32State);
+
+    wchar_t SourceGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
+    Win32BuildEXEPathFileName(&Win32State, L"handmade.dll", 
+                              WIN32_STATE_FILE_NAME_COUNT, 
+                              SourceGameCodeDLLFullPath);
+
+    wchar_t TempGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
+    Win32BuildEXEPathFileName(&Win32State, L"handmade_temp.dll",
+                              WIN32_STATE_FILE_NAME_COUNT,
+                              TempGameCodeDLLFullPath);
 
     // NOTE(Sebas): Set the Windows scheduler granularity to 1ms
     // so that our Sleep() can be more granular
@@ -957,7 +991,6 @@ WinMain(HINSTANCE Instance,
             Win32ClearBuffer(&SoundOutput);
             GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
-            win32_state Win32State = {};
             GlobalRunning = true;
 #if 0
             // NOTE(Sebas): This tests the play/write cursor update frequency on my machine
@@ -1065,6 +1098,7 @@ WinMain(HINSTANCE Instance,
                                 if(XInputGetState(ControllerIndex-1, &ControllerState) == ERROR_SUCCESS)
                                 {
                                     NewController->IsConnected = true;
+                                    NewController->IsAnalog = OldController->IsAnalog;
                                     // NOTE(Sebas): This controller is plugged in      
                                     // TODO(Sebas): See if ControllerState.dwPacketNumber increments to rapidly
                                     XINPUT_GAMEPAD* Pad = &ControllerState.Gamepad;
