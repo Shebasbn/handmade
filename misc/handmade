@@ -18,8 +18,3 @@ target:
   working_directory: "../data"
   enabled: 1
 }
-breakpoint:
-{
-  source_location: "W:/handmade/src/win32_handmade.cpp:887:1"
-  hit_count: 1
-}

@@ -17,7 +17,7 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
     int16* SampleOut = SoundBuffer->Samples;
     for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; SampleIndex++)
     {
-#if 0
+#if 1
         real32 SineValue = sinf(GameState->tSine);
         int16 SampleValue = (int16)(SineValue * ToneVolume);
 #else
@@ -37,7 +37,7 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
 internal void
 RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 {
-#if 1
+#if 0
     BlueOffset = 0;
     GreenOffset = 0;
 #else
@@ -53,7 +53,7 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
             uint8 Green = (uint8)(y + GreenOffset);
             uint8 Red = 0;
             uint8 Alpha = 255;
-            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 16) | (Blue)); // BLUE Value
+            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 8) | (Blue)); // BLUE Value
         }
         Row += Buffer->Pitch;
     }

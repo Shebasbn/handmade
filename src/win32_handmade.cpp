@@ -203,18 +203,14 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile)
 }
 
 inline FILETIME
-Win32GetLastWriteTime(wchar_t* Filename)
+Win32GetLastWriteTime(wchar_t* FileName)
 {
     FILETIME LastWriteTime = {};
-
-    WIN32_FIND_DATAW FileData;
-    HANDLE FindHandle = FindFirstFile(Filename, &FileData);
-    if (FindHandle != INVALID_HANDLE_VALUE)
+    WIN32_FILE_ATTRIBUTE_DATA FileData;
+    if (GetFileAttributesExW(FileName, GetFileExInfoStandard,&FileData))
     {
         LastWriteTime = FileData.ftLastWriteTime;
-        FindClose(FindHandle);
     }
-
     return LastWriteTime;
 }
 internal win32_game_code
@@ -236,8 +232,8 @@ Win32LoadGameCode(wchar_t* SourceDLLName, wchar_t* TempDLLName)
     }
     if (!Result.IsValid)
     {
-        Result.UpdateAndRender = GameUpdateAndRenderStub;
-        Result.GetSoundSamples = GameGetSoundSamplesStub;
+        Result.UpdateAndRender = 0;
+        Result.GetSoundSamples = 0;
     }
 
     return Result;
@@ -252,8 +248,8 @@ Win32UnloadGameCode(win32_game_code* GameCode)
         GameCode->GameCodeDLL = 0;
     }
     GameCode->IsValid = false;
-    GameCode->UpdateAndRender = GameUpdateAndRenderStub;
-    GameCode->GetSoundSamples = GameGetSoundSamplesStub;
+    GameCode->UpdateAndRender = 0;
+    GameCode->GetSoundSamples = 0;
 
 }
 
@@ -491,7 +487,7 @@ Win32FillSoundBuffer(win32_sound_output* SoundOutput,
 internal void
 Win32ProcessKeyboardMessage(game_button_state* NewState, bool32 IsDown)
 {
-    Assert(NewState->EndedDown != IsDown);
+    // Assert(NewState->EndedDown != IsDown);
     NewState->EndedDown = IsDown;
     ++NewState->HalfTransitionCount; 
 }
@@ -562,6 +558,7 @@ Win32BeginRecordingInput(win32_state* Win32State, int InputRecordingIndex)
     Win32GetInputFileLocation(Win32State, InputRecordingIndex, ArrayCount(FileName), FileName); 
 
     Win32State->RecordingHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
     DWORD BytesToWrite = (DWORD)Win32State->TotalSize;
     Assert(BytesToWrite == Win32State->TotalSize);
     DWORD BytesWritten;
@@ -580,7 +577,9 @@ Win32BeginInputPlayback(win32_state* Win32State, int InputPlaybackIndex)
 {
     Win32State->InputPlaybackIndex = InputPlaybackIndex; 
     // TODO(Sebas): These files must go in a temporary/build directory!
-    wchar_t* FileName = L"foo.hmi";
+    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+    Win32GetInputFileLocation(Win32State, InputPlaybackIndex, ArrayCount(FileName), FileName); 
+
     Win32State->PlaybackHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
     DWORD BytesToRead = (DWORD)Win32State->TotalSize;
     Assert(Win32State->TotalSize == BytesToRead);
@@ -702,6 +701,7 @@ Win32ProcessPendingMessages(win32_state* Win32State, game_controller_input* Keyb
                             if (Win32State->InputPlaybackIndex != 0)
                             {
                                 Win32EndInputPlayback(Win32State);
+                                Win32State->ResetInput = true;
                                 break;
                             }
                             if (Win32State->InputRecordingIndex == 0)
@@ -761,6 +761,7 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
         case WM_ACTIVATEAPP:
         {
             OutputDebugString(L"WM_ACTIVATEAPP:\n");
+#if 0
             if (WParam == TRUE)
             {
                 SetLayeredWindowAttributes(Window, RGB(0, 0, 0), 255, LWA_ALPHA);
@@ -769,6 +770,7 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
             {
                 SetLayeredWindowAttributes(Window, RGB(0, 0, 0), 68, LWA_ALPHA);
             }
+#endif
         } break;
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
@@ -960,7 +962,7 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExW(
-                WS_EX_TOPMOST | WS_EX_LAYERED,
+                0,// WS_EX_TOPMOST | WS_EX_LAYERED,
                 WindowClass.lpszClassName,
                L"Handmade Hero",
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
@@ -1024,6 +1026,8 @@ WinMain(HINSTANCE Instance,
 
             Win32State.TotalSize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
 
+            // TODO(Sebas): Handle various memory footprints (USING SYSTEM METRICS)
+            // TODO(Sebas): Use MEM_LARGE_PAGES and call adjust token privileges
             Win32State.GameMemoryBlock = VirtualAlloc(BaseAddress, (size_t)Win32State.TotalSize,
                                                        MEM_RESERVE | MEM_COMMIT,
                                                        PAGE_READWRITE);
@@ -1194,7 +1198,16 @@ WinMain(HINSTANCE Instance,
                         {
                             Win32PlayBackInput(&Win32State, NewInput);
                         }
-                        Game.UpdateAndRender(&GameMemory, &GameBuffer, NewInput);
+                        if (Win32State.ResetInput)
+                        {
+                            *NewInput = {};
+                            Win32State.ResetInput = false;
+                        }
+                        
+                        if (Game.UpdateAndRender)
+                        {
+                            Game.UpdateAndRender(&GameMemory, &GameBuffer, NewInput);
+                        }
 
                         LARGE_INTEGER AudioWallClock = Win32GetWallClock();
                         real32 FromBeginToAudioSeconds = Win32GetSecondsElapsed(FlipWallClock, AudioWallClock);
@@ -1279,7 +1292,10 @@ WinMain(HINSTANCE Instance,
                             SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
                             SoundBuffer.Samples = Samples;
 
-                            Game.GetSoundSamples(&GameMemory, &SoundBuffer);
+                            if (Game.GetSoundSamples)
+                            {
+                                Game.GetSoundSamples(&GameMemory, &SoundBuffer);
+                            }
                             Win32FillSoundBuffer(&SoundOutput, BytesToLock, BytesToWrite, &SoundBuffer);
 #if HANDMADE_INTERNAL
                             win32_debug_time_marker* Marker = &DebugTimeMarkers[DebugTimeMarkerIndex];
