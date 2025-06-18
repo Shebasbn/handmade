@@ -113,11 +113,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     if(!Memory->IsInitialized)
     {
         char* FileName = __FILE__;
-        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(FileName);
+        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(Thread, FileName);
         if (File.Contents)
         {
-            Memory->DEBUGPlatformWriteEntireFile("test.out", File.Contents, File.ContentsSize);
-            Memory->DEBUGPlatformFreeFileMemory(File.Contents);
+            Memory->DEBUGPlatformWriteEntireFile(Thread, "test.out", File.Contents, File.ContentsSize);
+            Memory->DEBUGPlatformFreeFileMemory(Thread, File.Contents);
             File = {};
         }
         GameState->ToneHz = 255;
@@ -193,6 +193,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // TODO(Sebas): Allow sample offsets for more roubst platform options
     RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
     RenderPlayer(Buffer, &GameState->PlayerX, &GameState->PlayerY);
+    if (Input->MouseButtons[0].EndedDown)
+    {
+        RenderPlayer(Buffer, &Input->MouseX, &Input->MouseY);
+    }
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)

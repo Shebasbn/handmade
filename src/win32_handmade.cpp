@@ -155,7 +155,7 @@ DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile)
                 {
                     // TODO(Sebas): Logging
                     // VirtualFree(Result.Contents, 0, MEM_RELEASE);
-                    DEBUGPlatformFreeFileMemory(Result.Contents);
+                    DEBUGPlatformFreeFileMemory(Thread, Result.Contents);
                     Result = {};
                 }
             }
@@ -487,9 +487,11 @@ Win32FillSoundBuffer(win32_sound_output* SoundOutput,
 internal void
 Win32ProcessKeyboardMessage(game_button_state* NewState, bool32 IsDown)
 {
-    // Assert(NewState->EndedDown != IsDown);
-    NewState->EndedDown = IsDown;
-    ++NewState->HalfTransitionCount; 
+    if (NewState->EndedDown != IsDown)
+    {
+        NewState->EndedDown = IsDown;
+        ++NewState->HalfTransitionCount; 
+    }
 }
 
 internal void
@@ -953,11 +955,6 @@ WinMain(HINSTANCE Instance,
     WindowClass.lpszClassName = L"HandmadeHeroeWindowClass";
 
 
-    // TODO(Sebas): How do we reliably query this on Windows?
-#define MonitorRefreshHz 60
-#define GameUpdateHz (int32)((real32)MonitorRefreshHz / 2.0f)
-    real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
-
     if (RegisterClassExW(&WindowClass))
     {
         HWND Window =
@@ -976,9 +973,17 @@ WinMain(HINSTANCE Instance,
                 0);
         if (Window)
         {
-            // NOTE(Sebas): Since we specified CS_OWNDC, we can just get one 
-            // device context and use it forever because we are not sharing
-            // it with anyone
+            // TODO(Sebas): How do we reliably query this on Windows?
+            int MonitorRefreshHz = 60;
+            HDC RefreshDC = GetDC(Window);
+            int Win32RefreshRate = GetDeviceCaps(RefreshDC ,VREFRESH);
+            ReleaseDC(Window, RefreshDC);
+            if (Win32RefreshRate > 1)
+            {
+                MonitorRefreshHz = Win32RefreshRate;
+            }
+            real32 GameUpdateHz ((real32)MonitorRefreshHz / 2.0f);
+            real32 TargetSecondsPerFrame = 1.0f / GameUpdateHz;
 
             // NOTE(Sebas): Graphics test
 
@@ -988,7 +993,7 @@ WinMain(HINSTANCE Instance,
             SoundOutput.RunningSampleIndex = 0;
             SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample;
 #define SafetyBytesDivisor 2
-            SoundOutput.SafetyBytes = ((SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample) / GameUpdateHz) / SafetyBytesDivisor;
+            SoundOutput.SafetyBytes = (int)(((real32)(SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample) / (real32)GameUpdateHz) / (real32)SafetyBytesDivisor);
             Win32InitDSound(Window, SoundOutput.SamplesPerSecond, SoundOutput.SecondaryBufferSize);
             Win32ClearBuffer(&SoundOutput);
             GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
@@ -1046,7 +1051,7 @@ WinMain(HINSTANCE Instance,
                 LARGE_INTEGER FlipWallClock = Win32GetWallClock();
 
                 int DebugTimeMarkerIndex = 0;
-                win32_debug_time_marker DebugTimeMarkers[GameUpdateHz / 2] = {};
+                win32_debug_time_marker DebugTimeMarkers[16] = {};
 
                 DWORD LastWriteCursor = 0;
                 bool32 SoundIsValid = false;
@@ -1082,6 +1087,16 @@ WinMain(HINSTANCE Instance,
 
                     if (!GlobalPause)
                     {
+                        POINT CursorPos;
+                        GetCursorPos(&CursorPos);
+                        ScreenToClient(Window, &CursorPos);
+                        NewInput->MouseX = CursorPos.x;
+                        NewInput->MouseY = CursorPos.y;
+                        NewInput->MouseZ = 0; // TODO(Sebas): Support mouse wheel 
+                        Win32ProcessKeyboardMessage(&NewInput->MouseButtons[0], GetKeyState(VK_LBUTTON) & (1 << 15));
+                        Win32ProcessKeyboardMessage(&NewInput->MouseButtons[1], GetKeyState(VK_RBUTTON) & (1 << 15));
+                        Win32ProcessKeyboardMessage(&NewInput->MouseButtons[2], GetKeyState(VK_MBUTTON) & (1 << 15));
+
                         DWORD MaxControllerCount = XUSER_MAX_COUNT + 1;
                         if(MaxControllerCount > ArrayCount(NewInput->Controllers))
                         {
@@ -1182,7 +1197,7 @@ WinMain(HINSTANCE Instance,
                         // Vibration.wLeftMotorSpeed = 30000;
                         // Vibration.wRightMotorSpeed = 30000;
                         // XInputSetState(0, &Vibration);
-                        // NOTE(Sebas): Compute how much sound to write and where
+                        thread_context Thread = {};
                         game_frame_buffer GameBuffer = {};
                         GameBuffer.Memory = GlobalFrameBuffer.Memory;
                         GameBuffer.Width = GlobalFrameBuffer.Width;
@@ -1203,10 +1218,10 @@ WinMain(HINSTANCE Instance,
                             *NewInput = {};
                             Win32State.ResetInput = false;
                         }
-                        
+
                         if (Game.UpdateAndRender)
                         {
-                            Game.UpdateAndRender(&GameMemory, &GameBuffer, NewInput);
+                            Game.UpdateAndRender(&Thread, &GameMemory, &GameBuffer, NewInput);
                         }
 
                         LARGE_INTEGER AudioWallClock = Win32GetWallClock();
@@ -1250,7 +1265,7 @@ WinMain(HINSTANCE Instance,
                             DWORD BytesToLock = (SoundOutput.RunningSampleIndex*SoundOutput.BytesPerSample)%
                                 SoundOutput.SecondaryBufferSize;
 
-                            DWORD ExpectedSoundBytesPerFrame = (SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample) / GameUpdateHz;
+                            DWORD ExpectedSoundBytesPerFrame = (DWORD)((real32)(SoundOutput.SamplesPerSecond * SoundOutput.BytesPerSample) / GameUpdateHz);
                             
                             real32 SecondsLeftUntilFlip = TargetSecondsPerFrame - FromBeginToAudioSeconds;
                             DWORD ExpectedBytesUntilFlip = (DWORD)((SecondsLeftUntilFlip/TargetSecondsPerFrame) * (real32)ExpectedSoundBytesPerFrame);
@@ -1294,7 +1309,7 @@ WinMain(HINSTANCE Instance,
 
                             if (Game.GetSoundSamples)
                             {
-                                Game.GetSoundSamples(&GameMemory, &SoundBuffer);
+                                Game.GetSoundSamples(&Thread, &GameMemory, &SoundBuffer);
                             }
                             Win32FillSoundBuffer(&SoundOutput, BytesToLock, BytesToWrite, &SoundBuffer);
 #if HANDMADE_INTERNAL
@@ -1366,7 +1381,7 @@ WinMain(HINSTANCE Instance,
 #if HANDMADE_INTERNAL
                         // TODO(Sebas): Current is wrong on the 0th index
                         Win32DebugSyncDisplay(&GlobalFrameBuffer, &SoundOutput, 
-                                DebugTimeMarkers, ArrayCount(DebugTimeMarkers), DebugTimeMarkerIndex - 1, 
+                                DebugTimeMarkers, (int)ArrayCount(DebugTimeMarkers), DebugTimeMarkerIndex - 1, 
                                 TargetSecondsPerFrame);
 #endif
                         HDC DeviceContext = GetDC(Window);
