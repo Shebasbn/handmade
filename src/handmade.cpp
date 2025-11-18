@@ -134,6 +134,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         GameState->PlayerX = 120;
         GameState->PlayerY = 120;
+
         // TODO(Sebas): This may be more appropriate to do in the platform layer
         Memory->IsInitialized = true;
     }

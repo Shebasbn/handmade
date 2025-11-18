@@ -51,6 +51,8 @@ struct win32_game_code
 {
     HMODULE GameCodeDLL;
     FILETIME DLLLastWriteTime;
+// WARNING(Sebas): Either of the callbacks can be 0!
+// You must check before calling!
     game_update_and_render* UpdateAndRender;
     game_get_sound_samples* GetSoundSamples;
     bool32 IsValid;
@@ -69,6 +71,8 @@ struct win32_state
 
     wchar_t EXEFileName[WIN32_STATE_FILE_NAME_COUNT];
     wchar_t* OnePastLastEXEFileNameSlash;
+
+    bool32 ResetInput;
 };
 #endif // WIN32_HANDMADE_H_
 

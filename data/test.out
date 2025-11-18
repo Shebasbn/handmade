@@ -17,7 +17,7 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
     int16* SampleOut = SoundBuffer->Samples;
     for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; SampleIndex++)
     {
-#if 0
+#if 1
         real32 SineValue = sinf(GameState->tSine);
         int16 SampleValue = (int16)(SineValue * ToneVolume);
 #else
@@ -53,7 +53,7 @@ RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
             uint8 Green = (uint8)(y + GreenOffset);
             uint8 Red = 0;
             uint8 Alpha = 255;
-            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 16) | (Blue)); // BLUE Value
+            *Pixel++ = ((Alpha << 24) | (Red << 16) | (Green << 8) | (Blue)); // BLUE Value
         }
         Row += Buffer->Pitch;
     }
@@ -113,11 +113,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     if(!Memory->IsInitialized)
     {
         char* FileName = __FILE__;
-        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(FileName);
+        debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(Thread, FileName);
         if (File.Contents)
         {
-            Memory->DEBUGPlatformWriteEntireFile("test.out", File.Contents, File.ContentsSize);
-            Memory->DEBUGPlatformFreeFileMemory(File.Contents);
+            Memory->DEBUGPlatformWriteEntireFile(Thread, "test.out", File.Contents, File.ContentsSize);
+            Memory->DEBUGPlatformFreeFileMemory(Thread, File.Contents);
             File = {};
         }
         GameState->ToneHz = 255;
@@ -193,6 +193,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     // TODO(Sebas): Allow sample offsets for more roubst platform options
     RenderWeirdGradient(Buffer, GameState->BlueOffset, GameState->GreenOffset);
     RenderPlayer(Buffer, &GameState->PlayerX, &GameState->PlayerY);
+    if (Input->MouseButtons[0].EndedDown)
+    {
+        RenderPlayer(Buffer, &Input->MouseX, &Input->MouseY);
+    }
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
