@@ -1,7 +1,8 @@
 // raddbg 0.9.19 project file
 
-recent_file: path: "W:/handmade/src/win32_handmade.cpp"
 recent_file: path: "../src/win32_handmade.cpp"
+recent_file: path: "../src/handmade.cpp"
+recent_file: path: "../build/win32_handmade.exe"
 recent_file: path: "../../helios/src/win32_helios.cpp"
 recent_file: path: "../../../src/handmade.cpp"
 recent_file: path: "../../../src/win32_handmade.cpp"
@@ -17,9 +18,4 @@ target:
   executable: "../build/win32_handmade.exe"
   working_directory: "../data"
   enabled: 1
-}
-breakpoint:
-{
-  source_location: "W:/handmade/src/win32_handmade.cpp:887:1"
-  hit_count: 1
 }

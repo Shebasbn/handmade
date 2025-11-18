@@ -408,10 +408,13 @@ Win32DisplayBufferInWindow(HDC DeviceContext,
                            int ViewportHeight, 
                            win32_frame_buffer* Buffer)
 {
+    /*PatBlt(DeviceContext, 0, 0, ViewportWidth, ViewportHeight, BLACKNESS);*/
+    int OffsetX = 10;
+    int OffsetY = 10;
     // TODO(Sebas): Aspect ratio correction  
     // TODO(Sebas): Play with stretch modes 
     StretchDIBits(DeviceContext,
-                  0, 0, Buffer->Width, Buffer->Height, 
+                  OffsetX, OffsetY, Buffer->Width, Buffer->Height,
                   0, 0, Buffer->Width, Buffer->Height,
                   Buffer->Memory,
                   &Buffer->Info,
@@ -788,6 +791,7 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
             PAINTSTRUCT Paint;
             HDC DeviceContext = BeginPaint(Window, &Paint);
             win32_viewport_dimensions Viewport = Win32GetViewportDimensions(Window);
+            PatBlt(DeviceContext, 0, 0, Viewport.Width, Viewport.Height, BLACKNESS);
             Win32DisplayBufferInWindow(DeviceContext, Viewport.Width, Viewport.Height, &GlobalFrameBuffer);
             EndPaint(Window, &Paint);
         } break;
@@ -941,7 +945,7 @@ WinMain(HINSTANCE Instance,
 
     WNDCLASSEXW WindowClass = {};
 
-    Win32ResizeDIBSection(&GlobalFrameBuffer, 1280, 720);
+    Win32ResizeDIBSection(&GlobalFrameBuffer, 960, 540);
 
     WindowClass.cbSize = sizeof(WNDCLASSEXW);
     WindowClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -960,7 +964,7 @@ WinMain(HINSTANCE Instance,
     {
         HWND Window =
             CreateWindowExW(
-                WS_EX_TOPMOST | WS_EX_LAYERED,
+                0/*WS_EX_TOPMOST | WS_EX_LAYERED*/,
                 WindowClass.lpszClassName,
                L"Handmade Hero",
                 WS_OVERLAPPEDWINDOW | WS_VISIBLE,
@@ -1053,6 +1057,8 @@ WinMain(HINSTANCE Instance,
                 uint64 LastCycleCount = __rdtsc();
                 while(GlobalRunning)
                 {
+                    NewInput->dtPerFrame = TargetSecondsPerFrame;
+
                     FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFullPath);
                     if (CompareFileTime(&Game.DLLLastWriteTime, &NewDLLWriteTime) != 0)
                     {
@@ -1349,9 +1355,9 @@ WinMain(HINSTANCE Instance,
                         win32_viewport_dimensions Viewport = Win32GetViewportDimensions(Window);
 #if HANDMADE_INTERNAL
                         // TODO(Sebas): Current is wrong on the 0th index
-                        Win32DebugSyncDisplay(&GlobalFrameBuffer, &SoundOutput, 
+                        /*Win32DebugSyncDisplay(&GlobalFrameBuffer, &SoundOutput, 
                                 DebugTimeMarkers, ArrayCount(DebugTimeMarkers), DebugTimeMarkerIndex - 1, 
-                                TargetSecondsPerFrame);
+                                TargetSecondsPerFrame);*/
 #endif
                         HDC DeviceContext = GetDC(Window);
                         Win32DisplayBufferInWindow(DeviceContext, Viewport.Width, Viewport.Height, &GlobalFrameBuffer);

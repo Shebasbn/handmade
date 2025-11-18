@@ -37,7 +37,7 @@ GameOutputSound(game_sound_output_buffer* SoundBuffer,game_state* GameState, int
 internal void
 RenderWeirdGradient(game_frame_buffer* Buffer, int BlueOffset, int GreenOffset)
 {
-#if 1
+#if 0
     BlueOffset = 0;
     GreenOffset = 0;
 #else

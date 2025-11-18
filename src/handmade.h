@@ -175,8 +175,11 @@ struct game_controller_input
 
 struct game_input
 {
-    // TODO(Sebas): Insert clock values here.
-    // real32 GameClock;
+    game_button_state MouseButtons[5];
+    int32 MouseX, MouseY, MouseZ;
+
+    real32 dtPerFrame;
+
     game_controller_input Controllers[5];
 };
 inline game_controller_input* GetController(game_input* Input, unsigned int ControllerIndex) 
@@ -215,15 +218,24 @@ GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub)
 }
 
 /////////////////////////////////////
+
+struct tile_map
+{
+    int32 CountX;
+    int32 CountY;
+
+    real32 UpperLeftX;
+    real32 UpperLeftY;
+    real32 TileWidth;
+    real32 TileHeight;
+
+    uint32* Tiles;
+};
+
 struct game_state
 {
-    int ToneHz;
-    int GreenOffset;
-    int BlueOffset;
-    real32 tSine;
-
-    int PlayerX;
-    int PlayerY;
+    real32 PlayerX;
+    real32 PlayerY;
 };
 
 
