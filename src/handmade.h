@@ -231,6 +231,14 @@ struct tile_map
     uint32* Tiles;
 };
 
+struct world
+{
+    int32 TileMapCountX;
+    int32 TileMapCountY;
+
+    tile_map* TileMaps;
+};
+
 struct game_state
 {
     real32 PlayerX;
