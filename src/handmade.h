@@ -16,7 +16,6 @@
  *  0 - No slow code allowed!
  *  1 - Slow code welcome.
 */
-#include <math.h>
 #include <stdint.h>
 
 #define internal static
@@ -217,22 +216,45 @@ typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 
 
 /////////////////////////////////////
+struct cannonical_position
+{
+    int32 TileMapX;
+    int32 TileMapY;
+
+    int32 TileX;
+    int32 TileY;
+
+    // NOTE(sebas): This is tile-relative X and Y
+    real32 TileRelX;
+    real32 TileRelY;
+};
+
+struct raw_position
+{
+    int32 TileMapX;
+    int32 TileMapY;
+
+    // NOTE(sebas): This is tile-map X and Y
+    real32 X;
+    real32 Y;
+};
 
 struct tile_map
 {
-    int32 CountX;
-    int32 CountY;
-
-    real32 UpperLeftX;
-    real32 UpperLeftY;
-    real32 TileWidth;
-    real32 TileHeight;
-
     uint32* Tiles;
 };
 
 struct world
 {
+    real32 TileSideInMeters;
+    uint32 TileSideInPixels;
+
+    int32 CountX;
+    int32 CountY;
+
+    real32 UpperLeftX;
+    real32 UpperLeftY;
+
     int32 TileMapCountX;
     int32 TileMapCountY;
 
@@ -241,6 +263,10 @@ struct world
 
 struct game_state
 {
+    //cannonical_position PlayerPos;
+    int32 PlayerTileMapX;
+    int32 PlayerTileMapY;
+
     real32 PlayerX;
     real32 PlayerY;
 };
