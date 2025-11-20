@@ -8,6 +8,9 @@ pushd .\build
 rem del win32_handmade.exe
 rem 32-bit build
 rem cl %CommonCompilerFlags% ..\src\win32_handmade.cpp -subsystem:windows,5.1 /link %link_opts% 
+
+REM 64-bit build
+REM Optimization switches /O2 /Oi /fp:fast
 cl %CommonCompilerFlags% -Fmhandmade.map ..\src\handmade.cpp -LD /link -incremental:no -opt:ref -EXPORT:GameGetSoundSamples -EXPORT:GameUpdateAndRender
 cl %CommonCompilerFlags% -Fmwin32_handmade.map ..\src\win32_handmade.cpp /link %CommonLinkerFlags% 
 popd
