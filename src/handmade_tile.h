@@ -7,7 +7,7 @@
    $Creator: Sebastian Bautista
    $Notice:
    ================================================================*/
-#include "handmade_core.h"
+//#include "handmade_platform.h"
 
 struct tile_map_position
 {
@@ -19,8 +19,7 @@ struct tile_map_position
     uint32 AbsTileZ;
 
     // NOTE(sebas): This is tile-relative X and Y
-    real32 OffsetX;
-    real32 OffsetY;
+    v2 Offset;
 };
 
 struct tile_chunk_position

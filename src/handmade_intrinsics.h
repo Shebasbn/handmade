@@ -8,7 +8,7 @@
    $Notice:
    ================================================================*/
 
-#include "handmade_core.h"
+//#include "handmade_platform.h"
 #include <math.h>
 
 inline uint32
