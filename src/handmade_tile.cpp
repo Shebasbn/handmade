@@ -6,26 +6,6 @@
    $Notice:
    ================================================================*/
 #include "handmade_tile.h"
-inline void
-RecanonicalizeCoord(tile_map* TileMap, uint32* Tile, real32* TileRel)
-{
-    int32 Offset = RoundReal32ToInt32(*TileRel / (real32)TileMap->TileSideInMeters);
-    *Tile += Offset;
-    *TileRel -= (real32)Offset * (real32)TileMap->TileSideInMeters;
-
-    Assert(*TileRel >= -0.5f * TileMap->TileSideInMeters);
-    Assert(*TileRel <= 0.5f * TileMap->TileSideInMeters);
-}
-
-inline tile_map_position
-RecannonicalizePosition(tile_map* TileMap, tile_map_position Pos)
-{
-    tile_map_position Result = Pos;
-
-    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.TileRelX);
-    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.TileRelY);
-    return Result;
-}
 
 inline tile_chunk*
 GetTileChunk(tile_map* TileMap, uint32 TileChunkX, uint32 TileChunkY, uint32 TileChunkZ)
@@ -86,11 +66,18 @@ GetTileValue(tile_map* TileMap, uint32 AbsTileX, uint32 AbsTileY, uint32 AbsTile
     return TileChunkValue;
 }
 
+inline uint32
+GetTileValue(tile_map* TileMap, tile_map_position Pos)
+{
+    uint32 TileValue = GetTileValue(TileMap, Pos.AbsTileX, Pos.AbsTileY, Pos.AbsTileZ);
+    return TileValue;
+}
+
 internal bool32
 IsTileMapPointEmpty(tile_map* TileMap, tile_map_position CanPos)
 {
     uint32 TileChunkValue = GetTileValue(TileMap, CanPos.AbsTileX, CanPos.AbsTileY, CanPos.AbsTileZ);
-    bool32 Empty = (TileChunkValue == 1);
+    bool32 Empty = ((TileChunkValue == 1) || (TileChunkValue == 3) || (TileChunkValue == 4));
 
     return Empty;
 }
@@ -135,4 +122,39 @@ SetTileValue(memory_arena* Arena, tile_map* TileMap,
         }
     }
     SetTileValue(TileMap, TileChunk, ChunkPos.RelTileX, ChunkPos.RelTileY, TileValue);
+}
+
+//
+//
+//
+
+inline void
+RecanonicalizeCoord(tile_map* TileMap, uint32* Tile, real32* TileRel)
+{
+    int32 Offset = RoundReal32ToInt32(*TileRel / (real32)TileMap->TileSideInMeters);
+    *Tile += Offset;
+    *TileRel -= (real32)Offset * (real32)TileMap->TileSideInMeters;
+
+    Assert(*TileRel >= -0.5f * TileMap->TileSideInMeters);
+    Assert(*TileRel <= 0.5f * TileMap->TileSideInMeters);
+}
+
+inline tile_map_position
+RecannonicalizePosition(tile_map* TileMap, tile_map_position Pos)
+{
+    tile_map_position Result = Pos;
+
+    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.OffsetX);
+    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.OffsetY);
+    return Result;
+}
+
+
+inline bool32
+AreOnSameTile(tile_map_position A, tile_map_position B)
+{
+    bool32 Result = ((A.AbsTileX == B.AbsTileX) && 
+                     (A.AbsTileY == B.AbsTileY) &&
+                     (A.AbsTileZ == B.AbsTileZ));
+    return Result;
 }

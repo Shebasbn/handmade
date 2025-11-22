@@ -608,8 +608,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         GameState->PlayerP.AbsTileX = 3;
         GameState->PlayerP.AbsTileY = 2;
-        GameState->PlayerP.TileRelX = 0.0f;
-        GameState->PlayerP.TileRelY = 0.0f;
+        GameState->PlayerP.OffsetX = 0.0f;
+        GameState->PlayerP.OffsetY = 0.0f;
         InitializeArena(&GameState->WorldArena, Memory->PermanentStorageSize - sizeof(game_state),
                         (uint8*)Memory->PermanentStorage + sizeof(game_state));
 
@@ -668,6 +668,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 RandomChoice = RandomNumberTable[RandomNumberIndex++] % 3;
             }
 
+            bool32 CreatedZDoor = false;
             if (RandomChoice == 2)
             {
                 if (AbsTileZ == 0)
@@ -676,8 +677,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 }
                 else
                 {
-                    DoorDown = false;
+                    DoorDown = true;
                 }
+                CreatedZDoor = true;
             }
             else if (RandomChoice == 1)
             {
@@ -762,16 +764,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             
             DoorLeft = DoorRight;
             DoorBottom = DoorTop;
-            
-            if (DoorUp)
+            if (CreatedZDoor)
             {
-                DoorDown = true;
-                DoorUp = false;
-            }
-            else if (DoorDown)
-            {
-                DoorUp = true;
-                DoorDown = false;
+
+                DoorDown = !DoorDown;
+                DoorUp = !DoorUp;
             }
             else
             {
@@ -859,20 +856,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 dPlayerY *= PlayerSpeed;
 
                 tile_map_position NewPlayerP = GameState->PlayerP;
-                NewPlayerP.TileRelX += dPlayerX * Input->dtPerFrame;
-                NewPlayerP.TileRelY += dPlayerY * Input->dtPerFrame;
+                NewPlayerP.OffsetX += dPlayerX * Input->dtPerFrame;
+                NewPlayerP.OffsetY += dPlayerY * Input->dtPerFrame;
                 NewPlayerP = RecannonicalizePosition(TileMap, NewPlayerP);
 
                 tile_map_position PlayerLeft = NewPlayerP;
-                PlayerLeft.TileRelX -= 0.5f * PlayerWidth;
+                PlayerLeft.OffsetX -= 0.5f * PlayerWidth;
                 PlayerLeft = RecannonicalizePosition(TileMap, PlayerLeft);
                 tile_map_position PlayerRight = NewPlayerP;
-                PlayerRight.TileRelX += 0.5f * PlayerWidth;
+                PlayerRight.OffsetX += 0.5f * PlayerWidth;
                 PlayerRight = RecannonicalizePosition(TileMap, PlayerRight);
                 if (IsTileMapPointEmpty(TileMap, NewPlayerP) &&
                     IsTileMapPointEmpty(TileMap, PlayerLeft) &&
                     IsTileMapPointEmpty(TileMap, PlayerRight))
                 {
+                    if (!AreOnSameTile(GameState->PlayerP, NewPlayerP))
+                    {
+                        uint32 NewTileValue = GetTileValue(TileMap, NewPlayerP);
+                        if (NewTileValue == 3)
+                        {
+                            NewPlayerP.AbsTileZ++;
+                        }
+                        else if (NewTileValue == 4)
+                        {
+                            NewPlayerP.AbsTileZ--;
+                        }
+                    }
                     GameState->PlayerP = NewPlayerP;
                 }
 
@@ -916,9 +925,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                     Gray = 0.0f;
                 }
 
-                real32 CenterX = ScreenCenterX - MetersToPixels * GameState->PlayerP.TileRelX
+                real32 CenterX = ScreenCenterX - MetersToPixels * GameState->PlayerP.OffsetX
                     + ((real32)RelColumn) * TileSideInPixels;
-                real32 CenterY = ScreenCenterY + MetersToPixels * GameState->PlayerP.TileRelY
+                real32 CenterY = ScreenCenterY + MetersToPixels * GameState->PlayerP.OffsetY
                     - ((real32)RelRow) * TileSideInPixels;
                 real32 MinX = CenterX - 0.5f * TileSideInPixels;
                 real32 MinY = CenterY - 0.5f * TileSideInPixels;

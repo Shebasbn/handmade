@@ -19,8 +19,8 @@ struct tile_map_position
     uint32 AbsTileZ;
 
     // NOTE(sebas): This is tile-relative X and Y
-    real32 TileRelX;
-    real32 TileRelY;
+    real32 OffsetX;
+    real32 OffsetY;
 };
 
 struct tile_chunk_position
