@@ -16,44 +16,7 @@
  *  0 - No slow code allowed!
  *  1 - Slow code welcome.
 */
-#include <stdint.h>
-
-#define internal static
-#define local_persist static
-#define global_variable static
-
-#define Pi32 3.14159265359f
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-typedef int32 bool32;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef float real32;
-typedef double real64;
-
-#if !defined(AssertBreak)
-    #define AssertBreak() (*(int*)0 = 0)
-#endif
-
-#define Stmnt(S) do{ S }while(0)
-#if HANDMADE_SLOW 
-    #define Assert(c) Stmnt(if(!(c)){ AssertBreak(); })
-#else
-    #define Assert(c)
-#endif
-
-#define Kilobytes(Value) ((Value)*1024LL)
-#define Megabytes(Value) (Kilobytes(Value)*1024LL)
-#define Gigabytes(Value) (Megabytes(Value)*1024LL)
-#define Terabytes(Value) (Gigabytes(Value)*1024LL)
-
-#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+#include "handmade_core.h"
 
 inline uint32
 SafeTruncateUInt64(uint64 Value)
@@ -216,49 +179,27 @@ typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 
 
 /////////////////////////////////////
-struct tile_chunk_position
+struct memory_arena
 {
-    uint32 TileChunkX;
-    uint32 TileChunkY;
-
-    uint32 RelTileX;
-    uint32 RelTileY;
+    memory_index Size;
+    memory_index Used;
+    uint8* Base;
 };
 
-struct world_position
-{
-    uint32 AbsTileX;
-    uint32 AbsTileY;
-
-    // NOTE(sebas): This is tile-relative X and Y
-    real32 TileRelX;
-    real32 TileRelY;
-};
-
-struct tile_chunk
-{
-    uint32* Tiles;
-};
+#include "handmade_tile.h"
 
 struct world
 {
-    uint32 ChunkShift;
-    uint32 ChunkMask;
-    uint32 ChunkDim;
+    tile_map* TileMap;
 
-    real32 TileSideInMeters;
-    uint32 TileSideInPixels;
-    real32 MetersToPixels;
-
-    int32 TileChunkCountX;
-    int32 TileChunkCountY;
-
-    tile_chunk* TileChunks;
 };
 
 struct game_state
 {
-    world_position PlayerP;
+    memory_arena WorldArena;
+    world* World;
+
+    tile_map_position PlayerP;
 };
 
 
