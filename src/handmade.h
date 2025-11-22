@@ -179,13 +179,6 @@ typedef GAME_GET_SOUND_SAMPLES(game_get_sound_samples);
 
 
 /////////////////////////////////////
-struct memory_arena
-{
-    memory_index Size;
-    memory_index Used;
-    uint8* Base;
-};
-
 #include "handmade_tile.h"
 
 struct world
