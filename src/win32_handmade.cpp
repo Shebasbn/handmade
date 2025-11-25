@@ -922,12 +922,12 @@ WinMain(HINSTANCE Instance,
         int ShowCode)
 {
     win32_state Win32State = {};
+    Win32GetEXEFileName(&Win32State);
 
     LARGE_INTEGER PerfCountFrequencyResult;
     QueryPerformanceFrequency(&PerfCountFrequencyResult);
     GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
 
-    Win32GetEXEFileName(&Win32State);
 
     wchar_t SourceGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
     Win32BuildEXEPathFileName(&Win32State, L"handmade.dll", 

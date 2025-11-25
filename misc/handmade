@@ -21,8 +21,3 @@ target:
   working_directory: "../data"
   enabled: 1
 }
-breakpoint:
-{
-  source_location: "../src/handmade.cpp:87:1"
-  hit_count: 1
-}
