@@ -984,9 +984,9 @@ WinMain(HINSTANCE Instance,
             ReleaseDC(Window, RefreshDC);
             if (Win32RefreshRate > 1)
             {
-                MonitorRefreshHz = Win32RefreshRate;
+                // MonitorRefreshHz = Win32RefreshRate;
             }
-            real32 GameUpdateHz ((real32)MonitorRefreshHz / 2.0f);
+            real32 GameUpdateHz ((real32)MonitorRefreshHz / 1.0f);
             real32 TargetSecondsPerFrame = 1.0f / GameUpdateHz;
 
             // NOTE(Sebas): Graphics test
@@ -1419,11 +1419,12 @@ WinMain(HINSTANCE Instance,
                         uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
                         LastCycleCount = EndCycleCount;
 
-                        real64 FPS = 0.0f;
+                        real64 FPS = 1000.0f / MSPerFrame;
                         real64 MCPF = (real32)CyclesElapsed / (1000.0f * 1000.0f);
 #if 1
                         wchar_t Buffer[256];
-                        swprintf_s((LPWSTR)Buffer, 256, L"%0.2fms/f,  %0.2ff/s,  %0.2fmc/f\n", MSPerFrame, FPS, MCPF);
+                        swprintf_s((LPWSTR)Buffer, 256, L"r: %0.2fms/f, t: %0.2fms/f,  %0.2ff/s,  %0.2fmc/f\n", 
+                                   MSPerFrame, TargetSecondsPerFrame * 1000.0f, FPS, MCPF);
                         OutputDebugStringW((LPWSTR)Buffer);
 #endif
 #if HANDMADE_INTERNAL

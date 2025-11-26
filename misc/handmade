@@ -1,9 +1,10 @@
 // raddbg 0.9.19 project file
 
 recent_file: path: "../src/handmade.cpp"
+recent_file: path: "../src/handmade_tile.cpp"
+recent_file: path: "../src/handmade_intrinsics.h"
 recent_file: path: "../src/win32_handmade.cpp"
 recent_file: path: "../src/handmade_math.h"
-recent_file: path: "../src/handmade_tile.cpp"
 recent_file: path: "../build/win32_handmade.exe"
 recent_file: path: "../../helios/src/win32_helios.cpp"
 recent_file: path: "../../../src/handmade.cpp"
@@ -20,4 +21,9 @@ target:
   executable: "../build/win32_handmade.exe"
   working_directory: "../data"
   enabled: 1
+}
+watch_pin:
+{
+  expression: ""
+  source_location: "../src/handmade.cpp:206:1"
 }
