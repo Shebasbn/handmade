@@ -286,6 +286,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         GameState->PlayerP.AbsTileY = 9/2;
         GameState->PlayerP.Offset.X = 0;
         GameState->PlayerP.Offset.Y = 0;
+        GameState->dPlayerP = {};
+
         GameState->HeroFacingDirection = 0;
         InitializeArena(&GameState->WorldArena, Memory->PermanentStorageSize - sizeof(game_state),
                         (uint8*)Memory->PermanentStorage + sizeof(game_state));
@@ -504,45 +506,51 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
             else
             {
-                v2 dPlayer = {};
+                v2 ddPlayer = {};
 
                 if (Controller->MoveUp.EndedDown)
                 {
-                    dPlayer.Y = 1.0f;
+                    ddPlayer.Y = 1.0f;
                     GameState->HeroFacingDirection = 1;
                 }
                 if (Controller->MoveDown.EndedDown)
                 {
-                    dPlayer.Y = -1.0f;
+                    ddPlayer.Y = -1.0f;
                     GameState->HeroFacingDirection = 0;
                 }
                 if (Controller->MoveLeft.EndedDown)
                 {
-                    dPlayer.X = -1.0f;
+                    ddPlayer.X = -1.0f;
                     GameState->HeroFacingDirection = 2;
                 }
                 if (Controller->MoveRight.EndedDown)
                 {
-                    dPlayer.X = 1.0f;
+                    ddPlayer.X = 1.0f;
                     GameState->HeroFacingDirection = 3;
                 }
 
-                if ((dPlayer.X != 0.0f) && (dPlayer.Y != 0.0f))
+                if ((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f))
                 {
-                    dPlayer *= 0.70710678118f;
+                    ddPlayer *= 0.70710678118f;
                 }
 
-                real32 PlayerSpeed = 2.0f;
+                real32 PlayerAcceleration = 10.0f;
 
                 if (Controller->ActionUp.EndedDown)
                 {
-                    PlayerSpeed = 10.0f;
+                    PlayerAcceleration = 50.0f;
                 }
-                dPlayer *= PlayerSpeed;
-                
+
+                ddPlayer *= PlayerAcceleration;
+                ddPlayer +=  -1.5f * GameState->dPlayerP; 
 
                 tile_map_position NewPlayerP = GameState->PlayerP;
-                NewPlayerP.Offset += dPlayer * Input->dtPerFrame;
+                NewPlayerP.Offset = 0.5f * ddPlayer * Square(Input->dtPerFrame) + 
+                                     GameState->dPlayerP * Input->dtPerFrame +
+                                     NewPlayerP.Offset;
+
+                GameState->dPlayerP = ddPlayer * Input->dtPerFrame + GameState->dPlayerP;
+
                 NewPlayerP = RecannonicalizePosition(TileMap, NewPlayerP);
 
                 tile_map_position PlayerLeft = NewPlayerP;
@@ -568,6 +576,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                         }
                     }
                     GameState->PlayerP = NewPlayerP;
+                }
+                else
+                {
+                    GameState->dPlayerP = {};
                 }
 
                 GameState->CameraP.AbsTileZ = GameState->PlayerP.AbsTileZ;

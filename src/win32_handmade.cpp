@@ -12,19 +12,17 @@
  * - Asset loading path
  * - Threading (launch a thread)
  * - Raw Input (support for multiple keyboards)
- * - Sleep/timeBeginPeriod
  * - ClipCursor() (For multimonitor support)
- * - Fullscreen support
- * - WM_SETCURSOR (control cursor visibility)
  * - QueryCancelAutoplay
  * - WM_ACTIVATE (for when we are not the active application)
  * - Bllit speed improvements (BlitBit)
  * - Hardware acceleration (OpenGL or Direct3D or BOTH??)
  * - GetKeyboardLayout (for French keyboards, international WASD support) 
+ * - ChangeDisplaySettings option if we detect slow fullscreen blit??
  *
  *  Just a partial list of stuff! 
  */
-#include "handmade.h"
+#include "handmade_platform.h"
 
 #include <windows.h>
 #include <xinput.h>
@@ -40,6 +38,8 @@ global_variable bool32 GlobalPause;
 global_variable win32_frame_buffer GlobalFrameBuffer;
 global_variable LPDIRECTSOUNDBUFFER GlobalSecondaryBuffer;
 global_variable int64 GlobalPerfCountFrequency;
+global_variable bool32 DEBUGGlobalShowCursor;
+global_variable WINDOWPLACEMENT GlobalWindowPlacement = { sizeof(GlobalWindowPlacement) };
 
 // NOTE(Sebas): XInputGetState 
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE* pState)
@@ -57,7 +57,7 @@ typedef X_INPUT_SET_STATE(x_input_set_state);
 X_INPUT_SET_STATE(XInputSetStateStub)
 {
     return ERROR_DEVICE_NOT_CONNECTED;
-}
+} 
 global_variable x_input_set_state* XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
@@ -404,18 +404,33 @@ Win32DisplayBufferInWindow(HDC DeviceContext,
                            int ViewportHeight, 
                            win32_frame_buffer* Buffer)
 {
-    /*PatBlt(DeviceContext, 0, 0, ViewportWidth, ViewportHeight, BLACKNESS);*/
-    int OffsetX = 10;
-    int OffsetY = 10;
-    // TODO(Sebas): Aspect ratio correction  
-    // TODO(Sebas): Play with stretch modes 
-    StretchDIBits(DeviceContext,
-                  OffsetX, OffsetY, Buffer->Width, Buffer->Height,
-                  0, 0, Buffer->Width, Buffer->Height,
-                  Buffer->Memory,
-                  &Buffer->Info,
-                  DIB_RGB_COLORS,
-                  SRCCOPY);
+    if ((ViewportWidth >= Buffer->Width * 2) &&
+        (ViewportHeight >= Buffer->Height * 2))
+    {
+        StretchDIBits(DeviceContext,
+                      0, 0, 2*Buffer->Width, 2*Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS,
+                      SRCCOPY);
+
+    }
+    else
+    {
+        /*PatBlt(DeviceContext, 0, 0, ViewportWidth, ViewportHeight, BLACKNESS);*/
+        int OffsetX = 10;
+        int OffsetY = 10;
+        // TODO(Sebas): Aspect ratio correction  
+        // TODO(Sebas): Play with stretch modes 
+        StretchDIBits(DeviceContext,
+                      OffsetX, OffsetY, Buffer->Width, Buffer->Height,
+                      0, 0, Buffer->Width, Buffer->Height,
+                      Buffer->Memory,
+                      &Buffer->Info,
+                      DIB_RGB_COLORS,
+                      SRCCOPY);
+    }
 }
 
 internal void
@@ -546,28 +561,67 @@ Win32ProcessXInputStickValue(SHORT Value, SHORT DeadzoneThreshold)
 //     Stick->AverageY = normalizedY * NormalizedMagnitude;
 // }
 
+//internal void
+//Win32GetInputFileLocation(win32_state* Win32State, int SlotIndex, 
+//                          int DestCount, wchar_t* Dest)
+//{
+//    Assert(SlotIndex == 1);
+//    Win32BuildEXEPathFileName(Win32State, L"loop_edit.hmi", DestCount, Dest);
+//}
+
 internal void
-Win32GetInputFileLocation(win32_state* Win32State, int SlotIndex, 
-                          int DestCount, wchar_t* Dest)
+Win32GetInputFileLocation(win32_state* State, bool32 InputStream,
+    int SlotIndex, int DestCount, wchar_t* Dest)
 {
-    Assert(SlotIndex == 1);
-    Win32BuildEXEPathFileName(Win32State, L"loop_edit.hmi", DestCount, Dest);
+    wchar_t Temp[64];
+    wsprintf(Temp, L"loop_edit_%d_%s.hmi", SlotIndex, InputStream ? L"input" : L"state");
+    Win32BuildEXEPathFileName(State, Temp, DestCount, Dest);
 }
 
-internal void
-Win32BeginRecordingInput(win32_state* Win32State, int InputRecordingIndex)
+internal win32_replay_buffer*
+Win32GetReplayBuffer(win32_state* State, int unsigned Index)
 {
-    Win32State->InputRecordingIndex = InputRecordingIndex; 
-    // TODO(Sebas): These files must go in a temporary/build directory!
-    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
-    Win32GetInputFileLocation(Win32State, InputRecordingIndex, ArrayCount(FileName), FileName); 
+    Assert(Index > 0);
+    Assert(Index < ArrayCount(State->ReplayBuffers));
+    win32_replay_buffer* Result = &State->ReplayBuffers[Index];
+    return(Result);
+}
 
-    Win32State->RecordingHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+//internal void
+//Win32BeginRecordingInput(win32_state* Win32State, int InputRecordingIndex)
+//{
+//    Win32State->InputRecordingIndex = InputRecordingIndex; 
+//    // TODO(Sebas): These files must go in a temporary/build directory!
+//    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+//    Win32GetInputFileLocation(Win32State, InputRecordingIndex, ArrayCount(FileName), FileName); 
+//
+//    Win32State->RecordingHandle = CreateFile(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+//
+//    DWORD BytesToWrite = (DWORD)Win32State->TotalSize;
+//    Assert(BytesToWrite == Win32State->TotalSize);
+//    DWORD BytesWritten;
+//    WriteFile(Win32State->RecordingHandle, Win32State->GameMemoryBlock, BytesToWrite, &BytesWritten, 0);
+//}
+internal void
+Win32BeginRecordingInput(win32_state* State, int InputRecordingIndex)
+{
+    win32_replay_buffer* ReplayBuffer = Win32GetReplayBuffer(State, InputRecordingIndex);
+    if (ReplayBuffer->MemoryBlock)
+    {
+        State->InputRecordingIndex = InputRecordingIndex;
 
-    DWORD BytesToWrite = (DWORD)Win32State->TotalSize;
-    Assert(BytesToWrite == Win32State->TotalSize);
-    DWORD BytesWritten;
-    WriteFile(Win32State->RecordingHandle, Win32State->GameMemoryBlock, BytesToWrite, &BytesWritten, 0);
+        wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+        Win32GetInputFileLocation(State, true, InputRecordingIndex, sizeof(FileName), FileName);
+        State->RecordingHandle = CreateFileW(FileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
+
+#if 0
+        LARGE_INTEGER FilePosition;
+        FilePosition.QuadPart = State->TotalSize;
+        SetFilePointerEx(State->RecordingHandle, FilePosition, 0, FILE_BEGIN);
+#endif
+
+        CopyMemory(ReplayBuffer->MemoryBlock, State->GameMemoryBlock, State->TotalSize);
+    }
 }
 
 internal void
@@ -577,26 +631,47 @@ Win32EndRecordingInput(win32_state* Win32State)
     Win32State->InputRecordingIndex = 0;
 }
 
+//internal void
+//Win32BeginInputPlayback(win32_state* Win32State, int InputPlaybackIndex)
+//{
+//    Win32State->InputPlaybackIndex = InputPlaybackIndex; 
+//    // TODO(Sebas): These files must go in a temporary/build directory!
+//    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+//    Win32GetInputFileLocation(Win32State, InputPlaybackIndex, ArrayCount(FileName), FileName); 
+//
+//    Win32State->PlaybackHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+//    DWORD BytesToRead = (DWORD)Win32State->TotalSize;
+//    Assert(Win32State->TotalSize == BytesToRead);
+//    DWORD BytesRead;
+//    ReadFile(Win32State->PlaybackHandle, Win32State->GameMemoryBlock, BytesToRead, &BytesRead, 0);
+//}
 internal void
-Win32BeginInputPlayback(win32_state* Win32State, int InputPlaybackIndex)
+Win32BeginInputPlayBack(win32_state* State, int InputPlayingIndex)
 {
-    Win32State->InputPlaybackIndex = InputPlaybackIndex; 
-    // TODO(Sebas): These files must go in a temporary/build directory!
-    wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
-    Win32GetInputFileLocation(Win32State, InputPlaybackIndex, ArrayCount(FileName), FileName); 
+    win32_replay_buffer* ReplayBuffer = Win32GetReplayBuffer(State, (uint32)InputPlayingIndex);
+    if (ReplayBuffer->MemoryBlock)
+    {
+        State->InputPlayingIndex = InputPlayingIndex;
 
-    Win32State->PlaybackHandle = CreateFile(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-    DWORD BytesToRead = (DWORD)Win32State->TotalSize;
-    Assert(Win32State->TotalSize == BytesToRead);
-    DWORD BytesRead;
-    ReadFile(Win32State->PlaybackHandle, Win32State->GameMemoryBlock, BytesToRead, &BytesRead, 0);
+        wchar_t FileName[WIN32_STATE_FILE_NAME_COUNT];
+        Win32GetInputFileLocation(State, true, InputPlayingIndex, sizeof(FileName), FileName);
+        State->PlaybackHandle = CreateFileW(FileName, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
+
+#if 0
+        LARGE_INTEGER FilePosition;
+        FilePosition.QuadPart = State->TotalSize;
+        SetFilePointerEx(State->PlaybackHandle, FilePosition, 0, FILE_BEGIN);
+#endif
+
+        CopyMemory(State->GameMemoryBlock, ReplayBuffer->MemoryBlock, State->TotalSize);
+    }
 }
 
 internal void
 Win32EndInputPlayback(win32_state* Win32State)
 {
     CloseHandle(Win32State->PlaybackHandle);
-    Win32State->InputPlaybackIndex = 0;
+    Win32State->InputPlayingIndex = 0;
 }
 internal void
 Win32RecordInput(win32_state* Win32State, game_input* NewInput)
@@ -605,16 +680,62 @@ Win32RecordInput(win32_state* Win32State, game_input* NewInput)
     WriteFile(Win32State->RecordingHandle, NewInput, sizeof(*NewInput), &BytesWritten, 0);
 }
 
+//internal void
+//Win32PlayBackInput(win32_state* Win32State, game_input* NewInput)
+//{
+//    DWORD BytesRead;
+//    if (!ReadFile(Win32State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0) || BytesRead != sizeof(*NewInput))
+//    {
+//        int PlayIndex = Win32State->InputPlaybackIndex;
+//        Win32EndInputPlayback(Win32State);
+//        Win32BeginInputPlayback(Win32State, PlayIndex);
+//        ReadFile(Win32State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0);
+//    }
+//}
 internal void
-Win32PlayBackInput(win32_state* Win32State, game_input* NewInput)
+Win32PlayBackInput(win32_state* State, game_input* NewInput)
 {
-    DWORD BytesRead;
-    if (!ReadFile(Win32State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0) || BytesRead != sizeof(*NewInput))
+    DWORD BytesRead = 0;
+    if (ReadFile(State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0))
     {
-        int PlayIndex = Win32State->InputPlaybackIndex;
-        Win32EndInputPlayback(Win32State);
-        Win32BeginInputPlayback(Win32State, PlayIndex);
-        ReadFile(Win32State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0);
+        if (BytesRead == 0)
+        {
+            // NOTE(casey): We've hit the end of the stream, go back to the beginning
+            int PlayingIndex = State->InputPlayingIndex;
+            Win32EndInputPlayback(State);
+            Win32BeginInputPlayBack(State, PlayingIndex);
+            ReadFile(State->PlaybackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0);
+        }
+    }
+}
+
+internal void 
+Win32ToggleFullScreen(HWND Window)
+{
+    // NOTE(Sebas): This Follows Raymond Chen's prescription for fullscreen toggling see:
+    // https://devblogs.microsoft.com/oldnewthing/20100412-00/?p=14353
+    DWORD Style = GetWindowLong(Window, GWL_STYLE);
+    if (Style & WS_OVERLAPPEDWINDOW) 
+    {
+        MONITORINFO MonitorInfo = { sizeof(MonitorInfo) };
+        if (GetWindowPlacement(Window, &GlobalWindowPlacement) && 
+            GetMonitorInfo(MonitorFromWindow(Window, MONITOR_DEFAULTTOPRIMARY), &MonitorInfo)) 
+        {
+            SetWindowLong(Window, GWL_STYLE, Style & ~WS_OVERLAPPEDWINDOW);
+            SetWindowPos(Window, HWND_TOP,
+                         MonitorInfo.rcMonitor.left, MonitorInfo.rcMonitor.top,
+                         MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left,
+                         MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
+                         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        }
+    } 
+    else 
+    {
+        SetWindowLong(Window, GWL_STYLE, Style | WS_OVERLAPPEDWINDOW);
+        SetWindowPlacement(Window, &GlobalWindowPlacement);
+        SetWindowPos(Window, NULL, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
     }
 }
 
@@ -703,32 +824,41 @@ Win32ProcessPendingMessages(win32_state* Win32State, game_controller_input* Keyb
                     {
                         if(IsDown)
                         {
-                            if (Win32State->InputPlaybackIndex != 0)
+                            if (Win32State->InputPlayingIndex == 0)
                             {
-                                Win32EndInputPlayback(Win32State);
-                                Win32State->ResetInput = true;
-                                break;
-                            }
-                            if (Win32State->InputRecordingIndex == 0)
-                            {
-                                Win32BeginRecordingInput(Win32State, 1);
+                                if (Win32State->InputRecordingIndex == 0)
+                                {
+                                    Win32BeginRecordingInput(Win32State, 1);
+                                }
+                                else
+                                {
+                                    Win32EndRecordingInput(Win32State);
+                                    Win32BeginInputPlayBack(Win32State, 1);
+                                }
                             }
                             else
                             {
-                                Win32EndRecordingInput(Win32State);
-                                Win32BeginInputPlayback(Win32State, 1);
+                                Win32EndInputPlayback(Win32State);
                             }
                         }
                     }
 #endif
+                    if (IsDown)
+                    {
+                        bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
+                        if ((VKCode == VK_F4) && (AltKeyWasDown))
+                        {
+                            GlobalRunning = false;
+                        }
+                        if ((VKCode == VK_RETURN) && AltKeyWasDown)
+                        {
+                            if (Message.hwnd)
+                            {
+                                Win32ToggleFullScreen(Message.hwnd);
+                            }
+                        }
+                    }
                 }
-
-                bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
-                if ((VKCode == VK_F4) && (AltKeyWasDown))
-                {
-                    GlobalRunning = false;
-                }
-
             } break;
             default:
             {
@@ -761,6 +891,18 @@ Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
         {
             // TODO(Sebas): Handle this as an error - recreate window?  
             GlobalRunning = false;
+        } break;
+
+        case WM_SETCURSOR:
+        {
+            if (DEBUGGlobalShowCursor)
+            {
+               Result = DefWindowProc(Window, Message, WParam, LParam);
+            }
+            else
+            {
+                SetCursor(0);
+            }
         } break;
 
         case WM_ACTIVATEAPP:
@@ -947,6 +1089,11 @@ WinMain(HINSTANCE Instance,
     
     Win32LoadXInput();
 
+#if HANDMADE_INTERNAL
+    DEBUGGlobalShowCursor = true;
+#else
+    DEBUGGlobalShowCursor = false;
+#endif
     WNDCLASSEXW WindowClass = {};
 
     Win32ResizeDIBSection(&GlobalFrameBuffer, 960, 540);
@@ -955,6 +1102,7 @@ WinMain(HINSTANCE Instance,
     WindowClass.style = CS_HREDRAW | CS_VREDRAW;
     WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = Instance;
+    WindowClass.hCursor = LoadCursor(0, IDC_ARROW);
     // WindowClass.hIcon;
     WindowClass.lpszClassName = L"HandmadeHeroeWindowClass";
 
@@ -1044,6 +1192,40 @@ WinMain(HINSTANCE Instance,
             GameMemory.PermanentStorage = Win32State.GameMemoryBlock;
             GameMemory.TransientStorage = ((uint8*)GameMemory.PermanentStorage + 
                                            GameMemory.PermanentStorageSize);
+
+            for (int ReplayIndex = 1;
+                ReplayIndex < ArrayCount(Win32State.ReplayBuffers);
+                ++ReplayIndex)
+            {
+                win32_replay_buffer* ReplayBuffer = &Win32State.ReplayBuffers[ReplayIndex];
+
+                // TODO(casey): Recording system still seems to take too long
+                // on record start - find out what Windows is doing and if
+                // we can speed up / defer some of that processing.
+
+                Win32GetInputFileLocation(&Win32State, false, ReplayIndex,
+                    sizeof(ReplayBuffer->FileName), ReplayBuffer->FileName);
+
+                ReplayBuffer->FileHandle =
+                    CreateFileW(ReplayBuffer->FileName,
+                        GENERIC_WRITE | GENERIC_READ, 0, 0, CREATE_ALWAYS, 0, 0);
+
+                LARGE_INTEGER MaxSize;
+                MaxSize.QuadPart = Win32State.TotalSize;
+                ReplayBuffer->MemoryMap = CreateFileMapping(
+                    ReplayBuffer->FileHandle, 0, PAGE_READWRITE,
+                    MaxSize.HighPart, MaxSize.LowPart, 0);
+
+                ReplayBuffer->MemoryBlock = MapViewOfFile(
+                    ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS, 0, 0, Win32State.TotalSize);
+                if (ReplayBuffer->MemoryBlock)
+                {
+                }
+                else
+                {
+                    // TODO(casey): Diagnostic
+                }
+            }
             
             if(Samples && GameMemory.PermanentStorage && GameMemory.TransientStorage)
             {
@@ -1215,7 +1397,7 @@ WinMain(HINSTANCE Instance,
                         {
                             Win32RecordInput(&Win32State, NewInput);
                         }
-                        if (Win32State.InputPlaybackIndex)
+                        if (Win32State.InputPlayingIndex)
                         {
                             Win32PlayBackInput(&Win32State, NewInput);
                         }
