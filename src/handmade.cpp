@@ -559,9 +559,47 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 tile_map_position PlayerRight = NewPlayerP;
                 PlayerRight.Offset.X += 0.5f * PlayerWidth;
                 PlayerRight = RecannonicalizePosition(TileMap, PlayerRight);
-                if (IsTileMapPointEmpty(TileMap, NewPlayerP) &&
-                    IsTileMapPointEmpty(TileMap, PlayerLeft) &&
-                    IsTileMapPointEmpty(TileMap, PlayerRight))
+
+                bool32 Collided = false;
+                tile_map_position  ColP = {};
+                if (!IsTileMapPointEmpty(TileMap, NewPlayerP))
+                {
+                    ColP = NewPlayerP;
+                    Collided = true;
+                }
+                else if (!IsTileMapPointEmpty(TileMap, PlayerLeft))
+                {
+                    ColP = PlayerLeft;
+                    Collided = true;
+                }
+
+                else if (!IsTileMapPointEmpty(TileMap, PlayerRight))
+                {
+                    ColP = PlayerRight;
+                    Collided = true;
+                }
+                if (Collided)
+                {
+                    v2 Normal = {};
+                    if (ColP.AbsTileX < GameState->PlayerP.AbsTileX)
+                    {
+                        Normal = {1, 0};
+                    }
+                    if (ColP.AbsTileY < GameState->PlayerP.AbsTileY)
+                    {
+                        Normal = {0, 1};
+                    }
+                    if (ColP.AbsTileX > GameState->PlayerP.AbsTileX)
+                    {
+                        Normal = {-1, 0};
+                    }
+                    if (ColP.AbsTileY > GameState->PlayerP.AbsTileY)
+                    {
+                        Normal = {0, -1};
+                    }
+                    GameState->dPlayerP = GameState->dPlayerP - DotProduct(GameState->dPlayerP, Normal) * Normal;
+                }
+                else
                 {
                     if (!AreOnSameTile(GameState->PlayerP, NewPlayerP))
                     {
@@ -576,10 +614,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                         }
                     }
                     GameState->PlayerP = NewPlayerP;
-                }
-                else
-                {
-                    GameState->dPlayerP = {};
                 }
 
                 GameState->CameraP.AbsTileZ = GameState->PlayerP.AbsTileZ;
